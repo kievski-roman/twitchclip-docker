@@ -1,4 +1,4 @@
-FROM php:8.1-fpm
+FROM php:8.4-fpm
 
 RUN apt-get update && apt-get install -y libmcrypt-dev libpng-dev mariadb-client \
     libpng-dev \
@@ -16,6 +16,8 @@ RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-webp=/usr/i
 RUN docker-php-ext-install -j$(nproc) gd
 
 RUN apt install jpegoptim optipng pngquant gifsicle libavif-bin -y
+
+RUN pecl install redis && docker-php-ext-enable redis
 
 RUN apt-get install -y wget unzip curl
 RUN curl -sS https://getcomposer.org/installer |php

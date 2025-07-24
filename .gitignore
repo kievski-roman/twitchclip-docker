@@ -1,0 +1,17 @@
+# Docker
+docker-compose.override.yml
+.dockerignore
+.env.docker
+
+# Log / Dump
+*.log
+*.sql
+*.sqlite
+
+# Coverage / Test stuff
+/coverage
+/.phpunit.result.cache
+/.phpunit.cache
+
+test.py
+test.wav
