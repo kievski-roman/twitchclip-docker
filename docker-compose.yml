@@ -102,15 +102,19 @@ services:
     build:
       context: ./whisper
       dockerfile: Dockerfile
+    container_name: whisper
     volumes:
-      - ./:/app
+      - ./src/storage/app/public:/data
     deploy:
       resources:
         reservations:
           devices:
             - capabilities: [ gpu ]
-    runtime: nvidia
-    command: sleep infinity
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "9000:9000"
+
 
 volumes:
   database:
