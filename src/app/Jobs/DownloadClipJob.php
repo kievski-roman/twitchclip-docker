@@ -34,7 +34,7 @@ class DownloadClipJob implements ShouldQueue
             'status'     => ClipStatus::VIDEO_DONE,
         ]);
 
-        ConvertAudioJob::dispatch($this->clip)->onQueue('audio');
+       ConvertAudioJob::dispatch($this->clip)->onQueue('audio');
+
     }
 }
-

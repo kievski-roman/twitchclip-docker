@@ -7,47 +7,47 @@ use App\Models\Clip;
 use App\Services\WhisperService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class TranscribeJob implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, SerializesModels;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct(public Clip $clip) {}
-
-    /**
-     * Execute the job.
-     */
 
     public function handle(WhisperService $whisper): void
     {
         $wav = storage_path('app/public/' . $this->clip->wav_path);
 
-        $srt = $whisper->transcribe($wav, $this->clip->lang);
-
-        if (!$srt || !is_file($srt)) {
+        if (! is_file($wav)) {
             $this->clip->update(['status' => ClipStatus::FAILED]);
             return;
         }
 
-        $relativeSrt = "str/{$this->clip->uuid}.srt";
+        // 1️отримуємо SRT‑ТЕКСТ
+        $srtText = $whisper->transcribe($wav);
 
-        // Записуємо результат whisper через Storage
-        Storage::disk('public')->put($relativeSrt, file_get_contents($srt));
+        if ($srtText === '') {
+            $this->clip->update(['status' => ClipStatus::FAILED]);
+            return;
+        }
 
+        $relative = "str/{$this->clip->uuid}.srt";
+
+        // 2️зберігаємо
+        Storage::disk('public')->put($relative, $srtText);
+
+        // 3️оновлюємо модель
         $this->clip->update([
-            'srt_path'         => $relativeSrt,
-            'transcript_plain' => strip_tags(file_get_contents($srt)),
+            'srt_path'         => $relative,
+            'transcript_plain' => strip_tags($srtText),
             'status'           => ClipStatus::READY,
         ]);
 
-        // Видаляємо тимчасові файли
+        // 4️почистили tmp‑wav
         @unlink($wav);
-    //    @unlink($srt);
     }
-
 }
+

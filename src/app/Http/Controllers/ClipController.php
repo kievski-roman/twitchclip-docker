@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ClipStatus;
+use App\Http\Requests\DownloadClipRequest;
+use App\Http\Requests\UpdateSrtRequest;
 use App\Jobs\BurnSubsJob;
 use App\Jobs\DownloadClipJob;
 use App\Models\Clip;
 use App\Services\TwitchApiService;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -57,14 +60,18 @@ class ClipController extends Controller
     }
 
     // Метод POST /clip/download
-    public function download(Request $request)
+    public function download(DownloadClipRequest $request)
     {
+        Log::info('❗️ DownloadClipRequest отримано, payload:', $request->all());
+
+        $data = $request->validated();
+        /** @var Clip $clip */
         $clip = Clip::firstOrCreate(
-            ['slug' => basename($request->url)],
+            ['slug' => basename($data['url'])],
             [
                 'uuid'   => (string) Str::uuid(),
-                'url'    => $request->url,
-                'name_video' => basename($request->url),
+                'url'    => $data['url'],
+                'name_video' => basename($data['url']),
                 'status' => ClipStatus::QUEUED,
                 'user_id' => auth()->id(),
             ]
@@ -85,26 +92,28 @@ class ClipController extends Controller
         return view('clip-index', compact('clips'));
     }
 
-    public function updateSrt(Request $request, Clip $clip)
+    public function updateSrt(UpdateSrtRequest $request, Clip $clip)
     {
-        $data = $request->validate([
-            'srt' => 'required|string',
-        ]);
-
-        // 1. Тільки ВІДНОСНИЙ шлях усередині диска 'public'
         $relative = "str/{$clip->uuid}.srt";
-
-        // 2. Пишемо файл у storage/app/public/str/...
-        Storage::disk('public')->put($relative, $data['srt']);
-
-        // 3. Запам’ятовуємо без "D:\..." – лиш «public/...»
-        $clip->update([
-            'srt_path' => $relative,
-            'status' => ClipStatus::READY,
+        Log::debug('WRITE_TO', ['rel' => $relative, 'db' => $clip->srt_path]);
+        Log::debug('EXIST?', [
+            'rel_exists' => Storage::disk('public')->exists($relative),
+            'db_exists'  => Storage::disk('public')->exists($clip->srt_path),
         ]);
+        $result = Storage::disk('public')->put($relative, $request->srt);
+        if (! $result) {
+            Log::error("Не вдалося записати SRT: $relative");
+        }
 
-        return response()->noContent();      // 204
+        // змінюємо тільки updated_at, бо srt_path і status не змінюються
+        $clip->touch();
+
+        return response($request->srt, 200)
+            ->header('Content-Type', 'text/plain')
+            ->header('Cache-Control', 'no-store');
     }
+
+
     public function show(Clip $clip)
     {
         // ✅ Ось це правильна версія, яка підтримує і абсолютні, і відносні шляхи
@@ -119,7 +128,6 @@ class ClipController extends Controller
                 : '';
         }
 
-        // ✅ так само роби для сабів (ти вже зробив):
         if (! Str::startsWith($clip->srt_path, ['/', 'C:', 'D:'])) {
             $subs = Storage::disk('public')->exists($clip->srt_path)
                 ? Storage::disk('public')->get($clip->srt_path)

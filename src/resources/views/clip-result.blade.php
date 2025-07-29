@@ -6,6 +6,7 @@
             <h3>{{ $clip['title'] }}</h3>
             <a href="{{ $clip['url'] }}" target="_blank">🔗 Перейти на Twitch</a><br><br>
             <img src="{{ $clip['thumbnail_url'] }}" width="300"><br>
+            <input type="text" value="{{ csrf_token() }}" readonly style="width:100%">
 
             <form action="{{ route('clip.download') }}" method="POST" style="margin-top: 10px;">
                 @csrf
@@ -13,6 +14,20 @@
                 <input type="hidden" name="username" value="{{ $username }}">
                 <button type="submit">⬇️ Завантажити відео</button>
             </form>
+            @if ($errors->any())
+                <div style="color:red">
+                    <ul>
+                        @foreach ($errors->all() as $e)
+                            <li>{{ $e }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if (session('flash'))
+                <div style="color:green">{{ session('flash') }}</div>
+            @endif
+
         </div>
     @endforeach
 </x-guest-layout>
