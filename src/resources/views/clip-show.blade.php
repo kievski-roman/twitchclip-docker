@@ -27,38 +27,38 @@
         $statusUrl   = route('api.clips.status', $clip);
     @endphp
 
-        <div x-data="hardSub({{ $clip->id }},
+    <div x-data="hardSub({{ $clip->id }},
                      '{{ $generateUrl }}',
                      '{{ $downloadUrl }}',
                      '{{ $statusUrl }}',
                      '{{ $clip->status->value }}',   {{-- ← .value --}}
                      '{{ csrf_token() }}')"
-             x-init="init()"
-             class="mt-4">
+         x-init="init()"
+         class="mt-4">
 
 
         {{-- queued  --}}
-            {{-- queued або ready --}}
-            <template x-if="status==='{{ \App\Enums\ClipStatus::QUEUED->value }}'
+        {{-- queued або ready --}}
+        <template x-if="status==='{{ \App\Enums\ClipStatus::QUEUED->value }}'
              || status==='{{ \App\Enums\ClipStatus::READY->value }}'">
-                <button @click="generate" class="btn btn-primary">
-                    🎞️ Generate video Hard‑sub
-                </button>
-            </template>
+            <button @click="generate" class="btn btn-primary">
+                🎞️ Generate video Hard‑sub
+            </button>
+        </template>
 
-            {{-- processing --}}
-            <template x-if="status==='{{ \App\Enums\ClipStatus::HARD_PROCESSING->value }}'">
-                <button class="btn btn-secondary" disabled>⏳ Generating…</button>
-            </template>
+        {{-- processing --}}
+        <template x-if="status==='{{ \App\Enums\ClipStatus::HARD_PROCESSING->value }}'">
+            <button class="btn btn-secondary" disabled>⏳ Generating…</button>
+        </template>
 
-            {{-- done --}}
-            <template x-if="status==='{{ \App\Enums\ClipStatus::HARD_DONE->value }}'">
-                <a :href="downloadUrl" class="btn btn-success" download>
-                    📥 Download MP4 with Hard‑sub
-                </a>
-            </template>
+        {{-- done --}}
+        <template x-if="status==='{{ \App\Enums\ClipStatus::HARD_DONE->value }}'">
+            <a :href="downloadUrl" class="btn btn-success" download>
+                📥 Download MP4 with Hard‑sub
+            </a>
+        </template>
 
-        </div>
+    </div>
 
     {{-- ======================= JS =================================================== --}}
     <script>
@@ -75,7 +75,7 @@
         function editor(url, initialText) {
             return {
                 // ► стан textarea
-                text:   initialText, // ← початковий вміст SRT, який Blade передав як@js($subs)
+                text:   initialText, // ← початковий вміст SRT, який Blade передав як
                 saving: false,       // true –коли йде HTTP PUT
                 saved:  false,       // true –коли PUT завершився
                 timer:  null,        // id таймера для debounce

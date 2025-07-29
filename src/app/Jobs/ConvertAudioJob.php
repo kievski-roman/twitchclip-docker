@@ -44,4 +44,3 @@ class ConvertAudioJob implements ShouldQueue
         TranscribeJob::dispatch($this->clip)->onQueue('transcribe');
     }
 }
-

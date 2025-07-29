@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ClipApiController;
+use App\Http\Controllers\WhisperProxyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -9,3 +10,5 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 Route::get('/clips/{clip}/status', [ClipApiController::class, 'status'])
     ->name('api.clips.status');
+Route::post('/transcribe', [WhisperProxyController ::class, 'transcribe']);
+

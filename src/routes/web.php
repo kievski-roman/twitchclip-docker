@@ -9,19 +9,13 @@ use Illuminate\Support\Facades\Route;
 | Гостьові маршрути (можна відкрити без логіну)
 |------------------------------------------------------------------------*/
 Route::view('/', 'welcome');
-//Route::get('/test', function () {
-//    $start = microtime(true);
-//    $html = view('welcome')->render();
-//    $duration = round((microtime(true) - $start) * 1000); // мс
-//    return "Render time: {$duration}ms";
-//});
+
 
 // або redirect()->route('clip.form')
 
 Route::get('/clip/search',  [ClipController::class,'showForm'])->name('clip.form');
 Route::post('/clip/search', [ClipController::class,'searchUserAndRedirect'])->name('clip.get');
 Route::get('/clips/result/{username}', [ClipController::class,'getClips'])->name('clip.result');
-
 /*-------------------------------------------------------------------------
 | Авторизовані маршрути
 |------------------------------------------------------------------------*/
@@ -59,7 +53,9 @@ Route::middleware('auth')->group(function () {
 
 
 });
+Route::get('/health', fn () => 'OK ' . now());
 /*-------------------------------------------------------------------------
 | Breeze auth маршрути (/login, /register, ... )
 |------------------------------------------------------------------------*/
 require __DIR__.'/auth.php';
+
