@@ -19,6 +19,7 @@ services:
     build:
       context: ./docker/php-fpm
       dockerfile: Dockerfile
+    user: "1000:1000"
     volumes:
       - ./src:/var/www
     environment:
@@ -35,6 +36,7 @@ services:
     build:
       context: ./docker/php-fpm
       dockerfile: Dockerfile
+    user: "1000:1000"
     volumes:
       - ./src:/var/www
     environment:
@@ -87,6 +89,7 @@ services:
     build:
       context: ./docker/php-fpm
       dockerfile: Dockerfile
+    user: "1000:1000"
     volumes:
       - ./src:/var/www
     command: php artisan queue:work
