@@ -35,7 +35,7 @@ Homestead.json
 auth.json
 storage/telescope/*
 
-
+.bash_history
 # Log / Dump
 *.log
 *.sql
