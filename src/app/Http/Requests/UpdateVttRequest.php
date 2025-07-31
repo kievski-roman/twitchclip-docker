@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateSrtRequest extends FormRequest
+class UpdateVttRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,6 +21,6 @@ class UpdateSrtRequest extends FormRequest
      */
     public function rules(): array
     {
-        return ['srt' => ['required', 'string']];
+        return ['vtt' => ['required', 'string']];
     }
 }

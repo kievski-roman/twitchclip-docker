@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('hard_path')->nullable();
             $table->text('video_path')->nullable();
             $table->text('wav_path')->nullable();
-            $table->text('srt_path')->nullable();
+            $table->text('vtt_path')->nullable();
 
             $table->string('status');               // queued / video_done / audio_done / ready / failed
             $table->foreignId('user_id')->nullable(); // додаси зв’язок, коли введеш users

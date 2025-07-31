@@ -11,8 +11,8 @@ body {
 }
 
 body.dark-mode {
-    /*background: #121212;*/
-    /*color: #f5f5f5;*/
+    background: #121212;
+    color: #f5f5f5;
 }
 
 .container {
@@ -35,7 +35,7 @@ body.dark-mode {
 }
 
 body.dark-mode .card {
-    /*background: #1e1e1e;*/
+    background: #1e1e1e;
 }
 
 .link-button {
@@ -55,7 +55,7 @@ body.dark-mode .card {
 }
 
 body.dark-mode .toggle-theme {
-    /*color: #bbb;*/
+    color: #bbb;
 }
 .auth-card {           /* заміна sm:max-w-md */
     @apply w-full max-w-sm sm:max-w-lg md:max-w-xl lg:max-w-2xl;

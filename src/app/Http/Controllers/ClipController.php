@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ClipStatus;
 use App\Http\Requests\DownloadClipRequest;
-use App\Http\Requests\UpdateSrtRequest;
+use App\Http\Requests\UpdateVttRequest;
 use App\Jobs\BurnSubsJob;
 use App\Jobs\DownloadClipJob;
 use App\Models\Clip;
@@ -92,23 +92,23 @@ class ClipController extends Controller
         return view('clip-index', compact('clips'));
     }
 
-    public function updateSrt(UpdateSrtRequest $request, Clip $clip)
+    public function updateVtt(UpdateVttRequest $request, Clip $clip)
     {
-        $relative = "str/{$clip->uuid}.srt";
-        Log::debug('WRITE_TO', ['rel' => $relative, 'db' => $clip->srt_path]);
+        $relative = "vtt/{$clip->uuid}.vtt";
+        Log::debug('WRITE_TO', ['rel' => $relative, 'db' => $clip->vtt_path]);
         Log::debug('EXIST?', [
             'rel_exists' => Storage::disk('public')->exists($relative),
-            'db_exists'  => Storage::disk('public')->exists($clip->srt_path),
+            'db_exists'  => Storage::disk('public')->exists($clip->vtt_path),
         ]);
-        $result = Storage::disk('public')->put($relative, $request->srt);
+        $result = Storage::disk('public')->put($relative, $request->vtt);
         if (! $result) {
-            Log::error("Не вдалося записати SRT: $relative");
+            Log::error("Не вдалося записати Vtt: $relative");
         }
 
-        // змінюємо тільки updated_at, бо srt_path і status не змінюються
+        // змінюємо тільки updated_at, бо vtt_path і status не змінюються
         $clip->touch();
 
-        return response($request->srt, 200)
+        return response($request->vtt, 200)
             ->header('Content-Type', 'text/plain')
             ->header('Cache-Control', 'no-store');
     }
@@ -128,13 +128,13 @@ class ClipController extends Controller
                 : '';
         }
 
-        if (! Str::startsWith($clip->srt_path, ['/', 'C:', 'D:'])) {
-            $subs = Storage::disk('public')->exists($clip->srt_path)
-                ? Storage::disk('public')->get($clip->srt_path)
+        if (! Str::startsWith($clip->vtt_path, ['/', 'C:', 'D:'])) {
+            $subs = Storage::disk('public')->exists($clip->vtt_path)
+                ? Storage::disk('public')->get($clip->vtt_path)
                 : '';
         } else {
-            $subs = is_file($clip->srt_path)
-                ? file_get_contents($clip->srt_path)
+            $subs = is_file($clip->vtt_path)
+                ? file_get_contents($clip->vtt_path)
                 : '';
         }
 

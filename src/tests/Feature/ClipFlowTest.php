@@ -33,11 +33,11 @@ class ClipFlowTest extends TestCase
         $this->assertEquals(ClipStatus::QUEUED, $clip->status);
         Queue::assertPushed(DownloadClipJob::class);
 
-        /** Шаг 2: емуляція — кліп завантажено й SRT готовий */
+        /** Шаг 2: емуляція — кліп завантажено й Vtt готовий */
         $clip->update(['status' => ClipStatus::READY]);
 
-        $this->put("/clips/{$clip->id}/srt", [
-            'srt' => "1\n00:00:00,000 --> 00:00:01,000\nHello",
+        $this->put("/clips/{$clip->id}/vtt", [
+            'vtt' => "1\n00:00:00,000 --> 00:00:01,000\nHello",
         ])->assertNoContent();
 
         $clip->refresh();

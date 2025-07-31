@@ -26,23 +26,23 @@ class TranscribeJob implements ShouldQueue
             return;
         }
 
-        // 1️отримуємо SRT‑ТЕКСТ
-        $srtText = $whisper->transcribe($wav);
+        // 1️отримуємо Vtt‑ТЕКСТ
+        $vttText = $whisper->transcribe($wav);
 
-        if ($srtText === '') {
+        if ($vttText === '') {
             $this->clip->update(['status' => ClipStatus::FAILED]);
             return;
         }
 
-        $relative = "str/{$this->clip->uuid}.srt";
+        $relative = "vtt/{$this->clip->uuid}.vtt";
 
         // 2️зберігаємо
-        Storage::disk('public')->put($relative, $srtText);
+        Storage::disk('public')->put($relative, $vttText);
 
         // 3️оновлюємо модель
         $this->clip->update([
-            'srt_path'         => $relative,
-            'transcript_plain' => strip_tags($srtText),
+            'vtt_path'         => $relative,
+            'transcript_plain' => strip_tags($vttText),
             'status'           => ClipStatus::READY,
         ]);
 

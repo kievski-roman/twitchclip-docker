@@ -1,67 +1,79 @@
 <x-app-layout>
-    <h2 class="text-xl mb-4">{{ $clip->slug }}</h2>
+    <h2 class="text-2xl font-semibold mb-6">{{ $clip->slug }}</h2>
 
-    {{-- ===== відео + редактор SRT ================================================= --}}
-    <div class="row gx-4 gy-4">
-        <div class="col-12 col-md-7">
-            <video class="w-100 border rounded" controls>
-                <source src="{{ Storage::url($clip->video_path) }}" type="video/mp4">
+    <!-- ================= Video + VTT editor ================= -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- ► video preview  -->
+        <div>
+            <video
+                x-ref="player"
+                class="w-full rounded-lg shadow-lg ring-1 ring-gray-200"
+                controls>
+                <source src="{{ Storage::url($clip->video_path) }}" type="video/mp4" />
+                <track
+                    id="subTrack"
+                    x-ref="track"
+                    label="VTT"
+                    kind="subtitles"
+                    srclang="en"
+                    src="{{ Storage::url($clip->vtt_path) }}"
+                    default
+                />
             </video>
         </div>
 
-        <div class="col-12 col-md-5 d-flex flex-column">
-            <h3 class="h5 mb-2">Субтитри (SRT)</h3>
-            <div x-data="editor('{{ route('clips.srt', $clip) }}', @js($subs))" class="d-flex flex-column">
-            <textarea x-model="text" @input="scheduleSave"
-                      class="form-control flex-grow-1 mb-2" style="min-height:300px">{{$subs}}</textarea>
-                <small x-show="saving" class="text-muted">Зберігаю…</small>
-                <small x-show="saved"  class="text-success">✓ збережено</small>
+        <!-- ► VTT textarea editor -->
+        <div
+            x-data="vttEditor({{ json_encode(route('clips.vtt', $clip)) }}, @js($subs))"
+            class="flex flex-col min-h-[340px]">
+
+            <h3 class="text-lg font-medium mb-2 text-center">Субтитри (VTT)</h3>
+
+            <textarea
+                x-model="text"
+                @input="scheduleSave"
+                spellcheck="false"
+                class="flex-grow resize-y min-h-[300px] rounded-lg border border-gray-300 shadow-sm px-4 py-3 font-mono text-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+
+            <div class="h-5 mt-1 text-sm">
+                <span x-show="saving" class="text-gray-500">Зберігаю…</span>
+                <span x-show="saved"  class="text-green-600">✓ збережено</span>
             </div>
         </div>
     </div>
 
-    {{-- ===== кнопка Generate / Generating / Download ================================= --}}
+    <!-- ================= Buttons ================= -->
     @php
         $generateUrl = route('clips.hardsubs', $clip);
         $downloadUrl = route('clips.download',  $clip);
         $statusUrl   = route('api.clips.status', $clip);
     @endphp
 
-    <div x-data="hardSub({{ $clip->id }},
-                     '{{ $generateUrl }}',
-                     '{{ $downloadUrl }}',
-                     '{{ $statusUrl }}',
-                     '{{ $clip->status->value }}',   {{-- ← .value --}}
-                     '{{ csrf_token() }}')"
-         x-init="init()"
-         class="mt-4">
+    <div
+        x-data="hardSub({{ $clip->id }}, '{{ $generateUrl }}', '{{ $downloadUrl }}', '{{ $statusUrl }}', '{{ $clip->status->value }}', '{{ csrf_token() }}')"
+        x-init="init()"
+        class="mt-8 flex justify-center">
 
-
-        {{-- queued  --}}
-        {{-- queued або ready --}}
-        <template x-if="status==='{{ \App\Enums\ClipStatus::QUEUED->value }}'
-             || status==='{{ \App\Enums\ClipStatus::READY->value }}'">
-            <button @click="generate" class="btn btn-primary">
-                🎞️ Generate video Hard‑sub
-            </button>
+        <!-- queued / ready -->
+        <template x-if="status === STATUS.QUEUED || status === STATUS.READY">
+            <button @click="generate" class="btn-primary">🎞️ Generate video Hard‑sub</button>
         </template>
 
-        {{-- processing --}}
-        <template x-if="status==='{{ \App\Enums\ClipStatus::HARD_PROCESSING->value }}'">
-            <button class="btn btn-secondary" disabled>⏳ Generating…</button>
+        <!-- processing -->
+        <template x-if="status === STATUS.PROC">
+            <button class="btn-secondary" disabled>⏳ Generating…</button>
         </template>
 
-        {{-- done --}}
-        <template x-if="status==='{{ \App\Enums\ClipStatus::HARD_DONE->value }}'">
-            <a :href="downloadUrl" class="btn btn-success" download>
-                📥 Download MP4 with Hard‑sub
-            </a>
+        <!-- done -->
+        <template x-if="status === STATUS.DONE">
+            <a :href="downloadUrl" class="btn-success" download>📥 Download MP4 with Hard‑sub</a>
         </template>
 
     </div>
 
-    {{-- ======================= JS =================================================== --}}
+    <!-- ================= Alpine stores ================= -->
     <script>
+        const trackEl = document.getElementById('subTrack');
 
         const STATUS = {
             QUEUED: '{{ App\Enums\ClipStatus::QUEUED->value }}',
@@ -70,94 +82,85 @@
             DONE:   '{{ App\Enums\ClipStatus::HARD_DONE->value }}',
         };
 
-        /* редактор SRT (ваш код) */
-        /* ===== редактор SRT ===== */
-        function editor(url, initialText) {
+        /* ------  VTT Editor  ------ */
+        function vttEditor(url, initialText) {
             return {
-                // ► стан textarea
-                text:   initialText, // ← початковий вміст SRT, який Blade передав як
-                saving: false,       // true –коли йде HTTP PUT
-                saved:  false,       // true –коли PUT завершився
-                timer:  null,        // id таймера для debounce
+                text:   initialText,
+                saving: false,
+                saved:  false,
+                timer:  null,
 
-                // ► викликається на кожен input у <textarea>
+                /* debounce 800 ms */
                 scheduleSave() {
-                    clearTimeout(this.timer);               // 👉 скидаємо попередній
-                    this.timer = setTimeout(() => this.save(), 1000); // 👉 чекаємо 1с
+                    clearTimeout(this.timer);
+                    this.timer = setTimeout(() => this.save(), 800);
+                    this.preview();
                 },
 
-                // ► надсилає PUT/clips/{id}/srt
                 async save() {
-                    this.saving = true;   // показує «Зберігаю…»
-                    this.saved  = false;
-
+                    this.saving = true; this.saved = false;
                     await fetch(url, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}' // Blade вставив токен
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
-                        body: JSON.stringify({ srt: this.text })
+                        body: JSON.stringify({ vtt: this.text })
                     });
+                    this.saving = false; this.saved = true;
+                    window.dispatchEvent(new CustomEvent('vtt-updated'));
+                    setTimeout(() => this.saved = false, 1500);
+                },
 
-                    this.saving = false;
-                    this.saved  = true;   // показує «✓ збережено»
-
-                    window.dispatchEvent(new CustomEvent('srt-updated'));
-
-                    setTimeout(() => this.saved = false, 1500); // через 1.5с ховає
+                /* live‑preview у <track> через Blob URL */
+                preview() {
+                    const track = this.$root.closest('[x-app-layout]').querySelector('[x-ref="track"]');
+                    if (!track) return;
+                    const blob = new Blob([this.text], { type: 'text/vtt' });
+                    track.src = URL.createObjectURL(blob);
                 }
             }
         }
 
-        /* ===== керування Hard‑sub ===== */
+        /* ------  Hard‑sub control  ------ */
         function hardSub(id, generateUrl, downloadUrl, statusUrl, initialStatus, csrf) {
             return {
-                // ► поточний статус кліпу: queued | hard_processing | hard_done
-                status:      initialStatus,
-                // ► URL для завантаження (поки null, заповниться, коли hard_done)
+                status: initialStatus,
                 downloadUrl: downloadUrl,
-                poller:      null,        // id setInterval
+                poller: null,
 
-                /* запускається відразу, коли Alpine ініціалізує компонент */
                 init() {
-                    /* реагуємо на зміну SRT */
-                    window.addEventListener('srt-updated', () => {
-                        this.status      = STATUS.READY;
-                        this.downloadUrl = null;      // ховаємо старий лінк
+                    window.addEventListener('vtt-updated', () => {
+                        this.status = STATUS.READY;
+                        this.downloadUrl = null;
                     });
-
-                    if (this.status === STATUS.PROC)
-                        this.startPolling();
+                    if (this.status === STATUS.PROC) this.startPolling();
                 },
 
-                /* кнопка "Generate" викликає цей метод */
                 async generate() {
-                    // 1. одразу перемикнемо UI на «Generating…»
                     this.status = STATUS.PROC;
                     this.startPolling();
-
-                    // 2. відправимо POST/clips/{id}/hardsubs (CSRF в headers)
-                    await fetch(generateUrl, {
-                        method:  'POST',
-                        headers: { 'X-CSRF-TOKEN': csrf }
-                    });
-                    // відповіді чекати не потрібно — статус пишемо у БД усередині Job
+                    await fetch(generateUrl, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf } });
                 },
 
-                /* опитування /api/clips/{id}/status кожні 5с */
                 startPolling() {
                     if (this.poller) return;
                     this.poller = setInterval(async () => {
                         const res = await fetch(statusUrl).then(r => r.json());
-                        this.status      = res.status;
+                        this.status = res.status;
                         this.downloadUrl = res.url;
-
                         if (this.status === STATUS.DONE) clearInterval(this.poller);
                     }, 5000);
                 }
             }
         }
-
     </script>
+
+    <!-- ===== Tailwind‑style button shortcuts ===== -->
+    <style>
+        .btn-primary  { @apply px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60; }
+        .btn-secondary{ @apply px-5 py-2 rounded-lg bg-gray-400  text-white cursor-not-allowed; }
+        .btn-success  { @apply px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700; }
+    </style>
+
 </x-app-layout>

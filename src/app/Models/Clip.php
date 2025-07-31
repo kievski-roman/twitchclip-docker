@@ -15,7 +15,7 @@ class Clip extends Model
     //
     protected $fillable = [
         'uuid', 'slug', 'url', 'name_video',
-        'video_path', 'wav_path', 'srt_path', 'hard_path',
+        'video_path', 'wav_path', 'vtt_path', 'hard_path',
         'status', 'user_id',
     ];
     protected $casts = [

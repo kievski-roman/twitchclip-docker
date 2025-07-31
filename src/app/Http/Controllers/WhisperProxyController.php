@@ -16,9 +16,9 @@ class WhisperProxyController extends Controller
         $path = $request->file('audio')->store('tmp');
 
         $absolute = storage_path('app/'.$path);
-        $srt      = $whisper->transcribe($absolute);
+        $vtt      = $whisper->transcribe($absolute);
 
-        return response()->json(['srt' => $srt]);
+        return response()->json(['vtt' => $vtt]);
     }
 }
 

@@ -26,7 +26,7 @@ class ClipFactory extends Factory
             // решта шляхів можемо лишити null
             'video_path' => null,
             'wav_path'   => null,
-            'srt_path'   => null,
+            'vtt_path'   => null,
             'hard_path'  => null,
         ];
     }

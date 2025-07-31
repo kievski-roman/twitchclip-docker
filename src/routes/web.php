@@ -35,9 +35,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('can:view,clip')
         ->name('clips.show');
 
-    Route::put('/clips/{clip}/srt', [ClipController::class,'updateSrt'])
+    Route::put('/clips/{clip}/vtt', [ClipController::class,'updateVtt'])
         ->middleware('can:update,clip')
-        ->name('clips.srt');
+        ->name('clips.vtt');
 
     Route::post('/clips/{clip}/hardsubs', [ClipController::class,'generateHardSubs'])
         ->middleware('can:update,clip')

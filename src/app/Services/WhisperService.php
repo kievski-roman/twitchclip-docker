@@ -14,7 +14,7 @@ class WhisperService
             basename($absPath)
         )
             ->post('http://whisper:9000/transcribe')
-            ->json('srt', '');
+            ->json('vtt', '');
     }
 }
 
