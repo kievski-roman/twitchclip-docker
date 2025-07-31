@@ -24,7 +24,7 @@ class BurnSubsJob implements ShouldQueue
 
         // Відносні шляхи з БД
         $videoPath = $this->clip->video_path;  // videos/xxx.mp4
-        $subsPath  = $this->clip->srt_path;    // str/xxx.srt
+        $subsPath  = $this->clip->vtt_path;    // str/xxx.vtt
         $outputRel = 'hard/' . $this->clip->uuid . '_hardsub.mp4';
 
         // Повний шлях для результату
@@ -36,7 +36,7 @@ class BurnSubsJob implements ShouldQueue
         $process = new Process([
             'ffmpeg', '-y',
             '-i', $videoPath,
-            '-vf', "subtitles='{$subsPath}'",
+            '-vf', "subtitles=$subsPath",
             '-c:v', 'libx264',
             $outputAbs,
         ], $basePath);  // ← тут вказано базову папку!

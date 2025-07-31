@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
       x-data
-      :class="{ dark: $store.theme.dark }">
+      :class="{ dark: $store.theme.dark }"   >
+{{----}}
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,9 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js','resources/js/theme.js'])
 </head>
 <body
-    class="bg-gradient-to-br from-gray-100 via-purple-100 to-blue-100
-         dark:from-zinc-900 dark:via-purple-900 dark:to-black
-         text-black dark:text-white min-h-screen flex flex-col">
+    class="bg-gradient-to-br from-gray-100 via-purple-100 to-blue-100">
 
 @include('layouts.navigation')   {{-- якщо є --}}
 <main class="flex-1">
