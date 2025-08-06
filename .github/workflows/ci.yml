@@ -24,10 +24,10 @@ jobs:
           --health-timeout=5s
           --health-retries=3
 
-    # Здесь задаём переменные окружения для всех шагов в этом job
+    # Переменные окружения для всех шагов
     env:
       DB_CONNECTION: mysql
-      DB_HOST: 127.0.0.1
+      DB_HOST: mysql           # <-- обязательно указывать "mysql" (имя сервиса)
       DB_PORT: 3306
       DB_DATABASE: laravel
       DB_USERNAME: root
@@ -35,6 +35,7 @@ jobs:
 
     defaults:
       run:
+        # ваш Laravel-код лежит в папке src
         working-directory: ./src
 
     steps:
@@ -53,9 +54,13 @@ jobs:
       - name: Copy .env and generate APP_KEY
         run: |
           cp .env.example .env
-          # Подменяем в .env DB_* на наши из env выше
+          # удаляем старые DB_* строки, чтобы не было конфликтов
           php -r "file_put_contents('.env', preg_replace('/^DB_.*$/m', '', file_get_contents('.env')));"
           php artisan key:generate
+
+      - name: Prepare storage directories
+        run: |
+          mkdir -p storage/framework/{cache,views}
 
       - name: Run migrations
         run: php artisan migrate --force
