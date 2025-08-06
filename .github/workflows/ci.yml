@@ -16,18 +16,15 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: secret
           MYSQL_DATABASE: laravel
-        ports:
-          - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
 
-    # Переменные окружения для всех шагов
     env:
       DB_CONNECTION: mysql
-      DB_HOST: mysql           # <-- обязательно указывать "mysql" (имя сервиса)
+      DB_HOST: mysql        # <- именно так
       DB_PORT: 3306
       DB_DATABASE: laravel
       DB_USERNAME: root
@@ -35,12 +32,10 @@ jobs:
 
     defaults:
       run:
-        # ваш Laravel-код лежит в папке src
         working-directory: ./src
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -54,16 +49,13 @@ jobs:
       - name: Copy .env and generate APP_KEY
         run: |
           cp .env.example .env
-          # удаляем старые DB_* строки, чтобы не было конфликтов
-          php -r "file_put_contents('.env', preg_replace('/^DB_.*$/m', '', file_get_contents('.env')));"
           php artisan key:generate
 
-      - name: Prepare storage directories
-        run: |
-          mkdir -p storage/framework/{cache,views}
+      - name: Prepare storage dirs
+        run: mkdir -p storage/framework/{cache,views}
 
       - name: Run migrations
         run: php artisan migrate --force
 
       - name: Run tests
-        run: vendor/bin/phpunit --colors=never
+        run: php artisan test --no-interaction --colors=never
