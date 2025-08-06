@@ -11,7 +11,6 @@
             <form action="{{ route('clip.download') }}" method="POST" style="margin-top: 10px;">
                 @csrf
                 <input type="hidden" name="url" value="{{ $clip['url'] }}">
-                <input type="hidden" name="username" value="{{ $username }}">
                 <button type="submit">⬇️ Завантажити відео</button>
             </form>
             @if ($errors->any())

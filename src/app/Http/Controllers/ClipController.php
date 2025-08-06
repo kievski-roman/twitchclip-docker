@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ClipStatus;
 use App\Http\Requests\DownloadClipRequest;
+use App\Http\Requests\UpdateStyleRequest;
 use App\Http\Requests\UpdateVttRequest;
 use App\Jobs\BurnSubsJob;
 use App\Jobs\DownloadClipJob;
@@ -24,15 +25,14 @@ class ClipController extends Controller
 
 
 
-
     public function __construct(TwitchApiService $twitch)
     {
         $this->twitch = $twitch;
     }
     public function showForm()
-{
-    return view('clip-form');
-}
+    {
+        return view('clip-form');
+    }
 
     public function getClips(string $username)
     {
@@ -95,14 +95,21 @@ class ClipController extends Controller
     public function updateVtt(UpdateVttRequest $request, Clip $clip)
     {
         $relative = "vtt/{$clip->uuid}.vtt";
+
+
         Log::debug('WRITE_TO', ['rel' => $relative, 'db' => $clip->vtt_path]);
         Log::debug('EXIST?', [
             'rel_exists' => Storage::disk('public')->exists($relative),
             'db_exists'  => Storage::disk('public')->exists($clip->vtt_path),
         ]);
+
+
         $result = Storage::disk('public')->put($relative, $request->vtt);
         if (! $result) {
             Log::error("Не вдалося записати Vtt: $relative");
+        }
+        if($request->has('style')){
+            $clip->update(['vtt_style' => $request->input('style')]);
         }
 
         // змінюємо тільки updated_at, бо vtt_path і status не змінюються
@@ -138,18 +145,38 @@ class ClipController extends Controller
                 : '';
         }
 
-        return view('clip-show', compact('clip', 'videoUrl', 'subs'));
+        return view('clip-show', [
+            'clip'        => $clip,
+            'videoUrl'    => $videoUrl,
+            'subs'        => $subs,
+            'styleUrl'    => route('clips.style',   $clip),
+            'generateUrl' => route('clips.hardsubs',$clip),
+            'downloadUrl' => route('clips.download', $clip),
+            'statusUrl'   => route('api.clips.status',$clip),
+        ]);
     }
-    public function generateHardSubs(Clip $clip)
+    public function generateHardSubs(Request $request,Clip $clip)
     {
-        $clip->update(['status' => ClipStatus::HARD_PROCESSING]);
+        $style = $request->input('style', [
+            'color'    => '#ffff00',
+            'fontSize' => 24,
+            'outline' => '#000000',
+            'fontStyle' => 'normal',
+            'ratio'     => '16:9',
+        ]);
+        $clip->update([
+            'status'    => ClipStatus::HARD_PROCESSING,
+            'vtt_style' => $style,
+        ]);
 
-        BurnSubsJob::dispatch($clip)
-            ->onQueue('hardsubs');
+        BurnSubsJob::dispatch(
+            $clip,
+            $style,
+            $style['ratio'] ?? '16:9'
+        )->onQueue('hardsubs');
 
         return back()->with('flash', 'Почали генерацію відео з hard-сабами!');
     }
-
     public function downloadHardSub(Clip $clip)
     {
         $this->authorize('download', $clip);
@@ -158,8 +185,12 @@ class ClipController extends Controller
         return Storage::disk('public')
             ->download($clip->hard_path, $clip->slug . '.mp4');
     }
-
-
-
+    public function updateStyle(UpdateStyleRequest $request, Clip $clip)
+    {
+        $clip->update([
+            'vtt_style' => $request->input('style'),
+            'status'    => ClipStatus::READY,
+        ]);
+        return response()->json(['ok'=>true]);
+    }
 }
-

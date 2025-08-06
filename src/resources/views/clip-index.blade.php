@@ -7,8 +7,8 @@
         <ul class="space-y-2">
             @foreach ($clips as $clip)
                 <li class="border p-3 rounded flex justify-between items-center">
-                    <span>{{ $clip->slug }}</span>
-
+                    {{--<span>{{ $clip->slug }}</span> --}}
+                    <span>{{ $clip['title'] }}</span>
 
                     <a href="{{ route('clips.show', $clip) }}"
                        class="text-blue-500 hover:underline">Переглянути →</a>

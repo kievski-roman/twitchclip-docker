@@ -1,19 +1,19 @@
 <x-app-layout>
+
     <h2 class="text-2xl font-semibold mb-6">{{ $clip->slug }}</h2>
 
-    <!-- ================= Video + VTT editor ================= -->
+    <!-- Видео + VTT-редактор -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- ► video preview  -->
         <div>
             <video
                 x-ref="player"
-                class="w-full rounded-lg shadow-lg ring-1 ring-gray-200"
-                controls>
+                class="w-full rounded shadow"
+                controls
+            >
                 <source src="{{ Storage::url($clip->video_path) }}" type="video/mp4" />
                 <track
-                    id="subTrack"
                     x-ref="track"
-                    label="VTT"
+                    label="Subtitles"
                     kind="subtitles"
                     srclang="en"
                     src="{{ Storage::url($clip->vtt_path) }}"
@@ -21,20 +21,19 @@
                 />
             </video>
         </div>
-
-        <!-- ► VTT textarea editor -->
-        <div
-            x-data="vttEditor({{ json_encode(route('clips.vtt', $clip)) }}, @js($subs))"
-            class="flex flex-col min-h-[340px]">
-
-            <h3 class="text-lg font-medium mb-2 text-center">Субтитри (VTT)</h3>
-
+        <div x-data="vttEditor(
+                {{ json_encode(route('clips.vtt', $clip)) }},
+                @js($subs)
+            )"
+             class="flex flex-col"
+        >
+            <h3 class="text-lg mb-2 text-center">Субтитри (VTT)</h3>
             <textarea
                 x-model="text"
                 @input="scheduleSave"
                 spellcheck="false"
-                class="flex-grow resize-y min-h-[300px] rounded-lg border border-gray-300 shadow-sm px-4 py-3 font-mono text-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
-
+                class="flex-grow resize-y min-h-[300px] border p-3 font-mono text-sm"
+            ></textarea>
             <div class="h-5 mt-1 text-sm">
                 <span x-show="saving" class="text-gray-500">Зберігаю…</span>
                 <span x-show="saved"  class="text-green-600">✓ збережено</span>
@@ -42,39 +41,69 @@
         </div>
     </div>
 
-    <!-- ================= Buttons ================= -->
-    @php
-        $generateUrl = route('clips.hardsubs', $clip);
-        $downloadUrl = route('clips.download',  $clip);
-        $statusUrl   = route('api.clips.status', $clip);
-    @endphp
-
+    <!-- Контролы стиля и кнопки -->
     <div
-        x-data="hardSub({{ $clip->id }}, '{{ $generateUrl }}', '{{ $downloadUrl }}', '{{ $statusUrl }}', '{{ $clip->status->value }}', '{{ csrf_token() }}')"
+        x-data="hardSub(
+        {{ $clip->id }},
+        '{{ $generateUrl }}',
+        '{{ $downloadUrl }}',
+        '{{ $statusUrl }}',
+        '{{ $styleUrl }}',
+        '{{ csrf_token() }}',
+        {{ json_encode($clip->vtt_style ?? [
+            'color'=>'#ffff00','fontSize'=>24,
+            'outline'=>'#000000','fontStyle'=>'normal',
+            'ratio' => '16:9',
+        ]) }}
+      )"
         x-init="init()"
-        class="mt-8 flex justify-center">
+        class="mt-8 flex gap-4"
+    >
+        <label>
+            Цвет:
+            <input type="color" x-model="style.color" />
+        </label>
 
-        <!-- queued / ready -->
-        <template x-if="status === STATUS.QUEUED || status === STATUS.READY">
-            <button @click="generate" class="btn-primary">🎞️ Generate video Hard‑sub</button>
+        <label>
+            Размер:
+            <input type="number" x-model="style.fontSize" min="10" max="72" />px
+        </label>
+
+        <label>
+            Обводка:
+            <input type="color" x-model="style.outline" />
+        </label>
+
+        <label>
+            Шрифт:
+            <select x-model="style.fontStyle">
+                <option value="normal">Normal</option>
+                <option value="bold">Bold</option>
+                <option value="italic">Italic</option>
+                <option value="bolditalic">Bold + Italic</option>
+            </select>
+        </label>
+        <label>
+            Ratio:
+            <select x-model="style.ratio">
+                <option value="16:9">16:9</option>
+                <option value="9:16">9:16</option>
+            </select>
+        </label>
+
+        <!-- Кнопки -->
+        <template x-if="status===STATUS.QUEUED||status===STATUS.READY">
+            <button @click="generate" class="btn-primary">Generate</button>
         </template>
-
-        <!-- processing -->
-        <template x-if="status === STATUS.PROC">
-            <button class="btn-secondary" disabled>⏳ Generating…</button>
+        <template x-if="status===STATUS.PROC">
+            <button class="btn-secondary" disabled>Generating…</button>
         </template>
-
-        <!-- done -->
-        <template x-if="status === STATUS.DONE">
-            <a :href="downloadUrl" class="btn-success" download>📥 Download MP4 with Hard‑sub</a>
+        <template x-if="status===STATUS.DONE">
+            <a :href="downloadUrl" class="btn-success" download>Download</a>
         </template>
-
     </div>
-
-    <!-- ================= Alpine stores ================= -->
+    <!-- Alpine.js logic -->
     <script>
-        const trackEl = document.getElementById('subTrack');
-
         const STATUS = {
             QUEUED: '{{ App\Enums\ClipStatus::QUEUED->value }}',
             READY:  '{{ App\Enums\ClipStatus::READY->value }}',
@@ -82,24 +111,22 @@
             DONE:   '{{ App\Enums\ClipStatus::HARD_DONE->value }}',
         };
 
-        /* ------  VTT Editor  ------ */
-        function vttEditor(url, initialText) {
+        // Редактор VTT с авто-сохранением и превью
+        function vttEditor(saveUrl, initialText) {
             return {
-                text:   initialText,
+                text: initialText,
                 saving: false,
-                saved:  false,
-                timer:  null,
+                saved: false,
+                timer: null,
 
-                /* debounce 800 ms */
                 scheduleSave() {
                     clearTimeout(this.timer);
                     this.timer = setTimeout(() => this.save(), 800);
                     this.preview();
                 },
-
                 async save() {
                     this.saving = true; this.saved = false;
-                    await fetch(url, {
+                    await fetch(saveUrl, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -111,36 +138,108 @@
                     window.dispatchEvent(new CustomEvent('vtt-updated'));
                     setTimeout(() => this.saved = false, 1500);
                 },
-
-                /* live‑preview у <track> через Blob URL */
                 preview() {
-                    const track = this.$root.closest('[x-app-layout]').querySelector('[x-ref="track"]');
-                    if (!track) return;
+                    const video = this.$refs.player;
+                    const track = this.$refs.track;
+                    if (!video || !track) return;
                     const blob = new Blob([this.text], { type: 'text/vtt' });
                     track.src = URL.createObjectURL(blob);
+                    const [tt] = video.textTracks;
+                    if (tt) {
+                        tt.mode = 'disabled';
+                        tt.mode = 'showing';
+                    }
                 }
             }
         }
 
-        /* ------  Hard‑sub control  ------ */
-        function hardSub(id, generateUrl, downloadUrl, statusUrl, initialStatus, csrf) {
+        // Управление генерацией харда и стилями
+        function hardSub(id, genUrl, dlUrl, statusUrl, styleUrl, csrf, initialStyle) {
+            const defaults = {
+                color:      '#ffff00',
+                fontSize:   24,
+                outline:   '#000000',
+                fontStyle:  'normal',
+                ratio: '16:9',
+            };
+
             return {
-                status: initialStatus,
-                downloadUrl: downloadUrl,
+                status: STATUS.READY,
+                downloadUrl: dlUrl,
+                style: { ...defaults, ...initialStyle },
                 poller: null,
 
                 init() {
+                    // Live-preview в видео
+                    this.applyCueStyle();
+                    this.$watch('style.color',      () => this.applyCueStyle());
+                    this.$watch('style.fontSize',   () => this.applyCueStyle());
+                    this.$watch('style.outline', () => this.applyCueStyle());
+                    this.$watch('style.fontStyle',  () => this.applyCueStyle());
+
+                    /// maybe in future make show ratio for user
+                    //this.$watch('style.ratio',  () => this.applyCueStyle());
+
+                    // Сохраняем новые стили на бэке
+                    this.$watch('style', () => this.saveStyle(), { deep: true });
+
                     window.addEventListener('vtt-updated', () => {
                         this.status = STATUS.READY;
                         this.downloadUrl = null;
                     });
-                    if (this.status === STATUS.PROC) this.startPolling();
+                    if (this.status === STATUS.PROC) {
+                        this.startPolling();
+                    }
+                },
+
+                async saveStyle() {
+                    this.status = STATUS.READY;
+                    this.downloadUrl = null;
+                    await fetch(styleUrl, {
+                        method: 'PATCH',
+                        headers: {
+                            'X-CSRF-TOKEN': csrf,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ style: this.style })
+                    });
+                },
+
+                applyCueStyle() {
+                    const { color, fontSize, outline, fontStyle } = this.style;
+                    let el = document.getElementById('cueStyle');
+                    if (!el) {
+                        el = document.createElement('style');
+                        el.id = 'cueStyle';
+                        document.head.appendChild(el);
+                    }
+                    el.textContent = `
+video::cue {
+  color: ${color};
+  font-size: ${fontSize}px;
+  font-style: ${fontStyle.includes('italic') ? 'italic' : 'normal'};
+  font-weight: ${fontStyle.includes('bold')   ? 'bold'    : 'normal'};
+  background: transparent !important;
+  text-shadow:
+    -1px -1px 0 ${outline},
+     1px -1px 0 ${outline},
+    -1px  1px 0 ${outline},
+     1px  1px 0 ${outline};
+}
+            `;
                 },
 
                 async generate() {
                     this.status = STATUS.PROC;
                     this.startPolling();
-                    await fetch(generateUrl, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf } });
+                    await fetch(genUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrf,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ style: this.style, ratio: this.style.ratio  })
+                    });
                 },
 
                 startPolling() {
@@ -149,18 +248,19 @@
                         const res = await fetch(statusUrl).then(r => r.json());
                         this.status = res.status;
                         this.downloadUrl = res.url;
-                        if (this.status === STATUS.DONE) clearInterval(this.poller);
-                    }, 5000);
+                        if (this.status === STATUS.DONE) {
+                            clearInterval(this.poller);
+                            this.poller = null;
+                        }
+                    }, 2000);
                 }
             }
         }
     </script>
 
-    <!-- ===== Tailwind‑style button shortcuts ===== -->
     <style>
-        .btn-primary  { @apply px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60; }
-        .btn-secondary{ @apply px-5 py-2 rounded-lg bg-gray-400  text-white cursor-not-allowed; }
-        .btn-success  { @apply px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700; }
+        .btn-primary   { @apply bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded; }
+        .btn-secondary { @apply bg-gray-400 text-white px-4 py-2 rounded opacity-50 cursor-not-allowed; }
+        .btn-success   { @apply bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded; }
     </style>
-
 </x-app-layout>

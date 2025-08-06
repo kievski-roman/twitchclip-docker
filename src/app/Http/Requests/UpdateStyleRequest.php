@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateVttRequest extends FormRequest
+class UpdateStyleRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,10 +22,10 @@ class UpdateVttRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vtt'   => ['required','string'],
-            'style' => ['array'],
-            'style.color'    => ['nullable','regex:/^#([0-9A-Fa-f]{6})$/'],
-            'style.fontSize' => ['nullable','integer','min:10','max:72'],
+            'style.color'        => ['required','regex:/^#([0-9A-Fa-f]{6})$/'],
+            'style.fontSize'     => ['required','integer','min:10','max:72'],
+            'style.background'   => ['nullable','regex:/^#([0-9A-Fa-f]{6})$/'],
+            'style.fontStyle'    => ['nullable','in:normal,bold,italic,bolditalic'],
         ];
     }
 }

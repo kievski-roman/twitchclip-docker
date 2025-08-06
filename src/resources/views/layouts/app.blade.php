@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'SubGenius' }}</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js','resources/js/theme.js'])
+    @vite(['resources/css/app.css', 'resources/js/alpine.js','resources/js/theme.js'])
 </head>
 <body
     class="bg-gradient-to-br from-gray-100 via-purple-100 to-blue-100">

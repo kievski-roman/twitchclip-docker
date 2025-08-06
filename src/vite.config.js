@@ -1,22 +1,26 @@
-import { defineConfig } from 'vite';
-import laravel from 'laravel-vite-plugin';
+// vite.config.js
+import { defineConfig } from 'vite'
+import laravel  from 'laravel-vite-plugin'
+import react    from '@vitejs/plugin-react'
 
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: [
+                'resources/css/app.css',          // Tailwind
+                'resources/js/alpine.js',         // Alpine// React entry
+            ],
             refresh: true,
         }),
     ],
     server: {
         host: '0.0.0.0',
-        port: 3000,
-        origin: 'http://localhost:3000',
-        open: false,
+        port: 5173,
+        strictPort: true,
+        hmr:  { host: 'localhost', port: 5173 },
         cors: {
-            origin: 'http://localhost:8088', // 👈 додай оце!
+            origin: 'http://localhost:8088',
             credentials: true,
         },
     },
-});
-
+})
