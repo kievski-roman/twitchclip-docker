@@ -16,10 +16,11 @@ class Clip extends Model
     protected $fillable = [
         'uuid', 'slug', 'url', 'name_video',
         'video_path', 'wav_path', 'vtt_path', 'hard_path',
-        'status', 'user_id',
+        'status', 'user_id','vtt_style',
     ];
     protected $casts = [
         'status' => ClipStatus::class,
+        'vtt_style' => 'array',
     ];
     public function user(){
         return $this->belongsTo(User::class);

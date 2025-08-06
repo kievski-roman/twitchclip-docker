@@ -14,5 +14,3 @@ Alpine.store('theme', {
         localStorage.setItem('theme', this.dark ? 'dark' : 'light')
     },
 })
-
-Alpine.start()

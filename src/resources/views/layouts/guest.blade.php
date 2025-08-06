@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? config('app.name', 'Laravel') }}</title>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/alpine.js'])
 </head>
 
 <body class="bg-gradient-to-br from-gray-100 via-purple-100 to-blue-100

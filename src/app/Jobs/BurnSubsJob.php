@@ -2,10 +2,10 @@
 namespace App\Jobs;
 
 use App\Models\Clip;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
@@ -15,39 +15,88 @@ class BurnSubsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public Clip $clip) {}
+    public function __construct(
+        public Clip  $clip,
+        public array $style = [],
+        public string $ratio
+    ) {}
 
     public function handle(): void
     {
-        // Робоча директорія: storage/app/public
         $basePath = storage_path('app/public');
+        File::ensureDirectoryExists("$basePath/temp");
+        File::ensureDirectoryExists("$basePath/hard");
 
-        // Відносні шляхи з БД
-        $videoPath = $this->clip->video_path;  // videos/xxx.mp4
-        $subsPath  = $this->clip->vtt_path;    // str/xxx.vtt
-        $outputRel = 'hard/' . $this->clip->uuid . '_hardsub.mp4';
+        $vttRel = $this->clip->vtt_path;
+        $uuid   = $this->clip->uuid;
+        $assRel = "temp/{$uuid}.ass";
+        $outRel = "hard/{$uuid}_hardsub.mp4";
 
-        // Повний шлях для результату
-        $outputAbs = $basePath . '/' . $outputRel;
+        // 1) VTT → ASS
+        (new Process(['ffmpeg','-y','-i',$vttRel,$assRel], $basePath))
+            ->setTimeout(300)->mustRun();
 
-        File::ensureDirectoryExists(dirname($outputAbs));
+        // 2) Инъекция стилей
+        $assAbs  = "$basePath/$assRel";
+        $content = File::get($assAbs);
 
-        // Команда ffmpeg із робочою директорією storage/app/public
-        $process = new Process([
-            'ffmpeg', '-y',
-            '-i', $videoPath,
-            '-vf', "subtitles=$subsPath",
-            '-c:v', 'libx264',
-            $outputAbs,
-        ], $basePath);  // ← тут вказано базову папку!
+        // primary colour
+        $hex      = ltrim($this->style['color'] ?? '#FFFF00', '#');
+        $rr       = substr($hex,0,2); $gg = substr($hex,2,2); $bb = substr($hex,4,2);
+        $primary  = "&H00{$bb}{$gg}{$rr}";
 
+        // outline colour
+        $hexO     = ltrim($this->style['outline'] ?? '#000000', '#');
+        $rrO      = substr($hexO,0,2); $ggO = substr($hexO,2,2); $bbO = substr($hexO,4,2);
+        $outline  = "&H00{$bbO}{$ggO}{$rrO}";
 
-        $process->setTimeout(600)->mustRun();
+        // secondary & back = transparent
+        $secondary = "&H00000000";
+        $backColor = "&H00000000";
 
-        // оновлюємо Clip після створення хард-сабів
+        // bold/italic
+        $fontStyle = $this->style['fontStyle'] ?? 'normal';
+        $bold      = stripos($fontStyle,'bold')   !== false ? 1 : 0;
+        $italic    = stripos($fontStyle,'italic') !== false ? 1 : 0;
+
+        // fontSize
+        $fontSize  = intval($this->style['fontSize'] ?? 24);
+
+        // build Style:
+        $newStyle = sprintf(
+            "Style: Default,Arial,%d,%s,%s,%s,%s,%d,%d,0,0,100,100,0,0,1,1,0,2,10,10,10,1",
+            $fontSize, $primary, $secondary, $outline, $backColor, $bold, $italic
+        );
+
+        $content = preg_replace('/^Style:.*$/m', $newStyle, $content);
+        File::put($assAbs, $content);
+
+        if ($this->ratio === '9:16') {
+            $vf = sprintf(
+                'ass=%s,scale=1080:-2,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black',
+                $assRel
+            );
+        } else {
+            $vf = "ass={$assRel}";
+        }
+
+        $burn = new Process([
+            'ffmpeg','-y',
+            '-i', $this->clip->video_path,
+            '-vf', $vf,
+            '-c:v','libx264',
+            '-c:a','copy',
+            $outRel
+        ], $basePath);
+
+        $burn->setTimeout(600)->mustRun();
+
+        // 4) Обновляем модель
         $this->clip->update([
-            'hard_path' => $outputRel,
+            'hard_path' => $outRel,
             'status'    => ClipStatus::HARD_DONE,
         ]);
     }
+
+
 }
