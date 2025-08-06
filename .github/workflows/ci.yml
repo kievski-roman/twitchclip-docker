@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    # автоматический MySQL для миграций
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: laravel
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    # указываем: все run-команды — из поддиректории src
+    defaults:
+      run:
+        working-directory: ./src
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, xml, pcntl, pdo_mysql
+
+      - name: Install Composer deps
+        run: composer install --no-progress --prefer-dist
+
+      - name: Copy env & generate key
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      - name: Run tests
+        run: vendor/bin/phpunit --colors=never
