@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\Http;
 
 class TwitchApiService
 {
-    protected string $clientId;
-    protected string $accessToken;
+    protected string $clientId = '';
+    protected string $accessToken = '';
 
     public function __construct()
     {
-        $this->clientId = config('services.twitch.client_id');
-        $this->accessToken = config('services.twitch.access_token');
+        $this->clientId = config('services.twitch.client_id','');
+        $this->accessToken = config('services.twitch.access_token','');
     }
 
     public function getUserIdByName(string $name): ?string
