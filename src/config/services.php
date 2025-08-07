@@ -36,9 +36,9 @@ return [
     ],
 
     'twitch' => [
-        'client_id' => env('TWITCH_CLIENT_ID'),
-        'secret' => env('TWITCH_SECRET'),
-        'access_token' => env('TWITCH_ACCESS_TOKEN'),
+        'client_id' => env('TWITCH_CLIENT_ID',''),
+        'secret' => env('TWITCH_SECRET',''),
+        'access_token' => env('TWITCH_ACCESS_TOKEN',''),
     ],
     // config/services.php
     'whisper' => [
