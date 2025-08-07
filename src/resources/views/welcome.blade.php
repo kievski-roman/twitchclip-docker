@@ -32,7 +32,4 @@
     </section>
 
     {{-- Example Videos, Footer — додай за потребою --}}
-    @push('scripts')
-        @vite('resources/js/theme.js')
-    @endpush
 </x-guest-layout>
