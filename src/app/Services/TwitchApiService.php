@@ -17,6 +17,10 @@ class TwitchApiService
 
     public function getUserIdByName(string $name): ?string
     {
+        if ($this->accessToken === '') {
+            return null;
+        }
+
         $response = Http::withHeaders([
             'Client-ID' => $this->clientId,
             'Authorization' => 'Bearer ' . $this->accessToken,
@@ -29,6 +33,10 @@ class TwitchApiService
 
     public function getClipsByUserId(string $broadcasterId, int $count = 5): array
     {
+        if ($this->accessToken === '') {
+            return [];
+        }
+
         $response = Http::withHeaders([
             'Client-ID' => $this->clientId,
             'Authorization' => 'Bearer ' . $this->accessToken,
