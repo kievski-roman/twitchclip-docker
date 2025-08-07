@@ -38,16 +38,19 @@ class ClipController extends Controller
     {
         $userId = $this->twitch->getUserIdByName($username);
 
-        if (!$userId) {
+        if (! $userId) {
             return back()->withErrors(['username' => 'Користувача не знайдено']);
         }
 
-        $clips = $this->twitch->getClipsByUserId($userId);
+        $raw = $this->twitch->getClipsByUserId($userId);
 
-        $clips = collect($clips)->map(function ($clip) {
-            $slug = basename($clip['url']);
-            $clip['filename'] = $slug . '.mp4';
-            return $clip;
+        $clips = collect($raw)->map(function ($c) {
+            return [
+                'url'      => $c['url'],
+                'title'    => $c['title'],              // ← тут та самая строка
+                'filename' => basename($c['url']) . '.mp4',
+                'thumbnail_url' => $c['thumbnail_url'], // если нужно
+            ];
         });
 
         return view('clip-result', compact('clips', 'username'));
@@ -71,7 +74,7 @@ class ClipController extends Controller
             [
                 'uuid'   => (string) Str::uuid(),
                 'url'    => $data['url'],
-                'name_video' => basename($data['url']),
+                'name_video' => $data['title'],
                 'status' => ClipStatus::QUEUED,
                 'user_id' => auth()->id(),
             ]

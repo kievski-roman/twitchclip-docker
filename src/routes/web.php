@@ -36,6 +36,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/clips', [ClipController::class,'index'])
         ->name('clips.index');
+
+    Route::delete('/clips/{clip}', [ClipController::class, 'destroy'])
+        ->name('clips.destroy');
+    Route::patch('/clips/{clip}/title', [ClipController::class, 'updateTitle'])
+        ->name('clips.updateTitle');
+
     Route::get('/clips/{clip}', [ClipController::class,'show'])
         ->middleware('can:view,clip')
         ->name('clips.show');

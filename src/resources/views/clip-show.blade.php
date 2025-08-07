@@ -1,6 +1,6 @@
 <x-app-layout>
 
-    <h2 class="text-2xl font-semibold mb-6">{{ $clip->slug }}</h2>
+    <h2 class="text-2xl font-semibold mb-6">{{ $clip->name_video }}</h2>
 
     <!-- Видео + VTT-редактор -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -76,18 +76,18 @@
 
         <label>
             Шрифт:
-            <select class="dark:text-black" x-model="style.fontStyle">
-                <option class="dark:text-black" value="normal">Normal</option>
-                <option class="dark:text-black" value="bold">Bold</option>
-                <option class="dark:text-black" value="italic">Italic</option>
+            <select x-model="style.fontStyle">
+                <option value="normal">Normal</option>
+                <option value="bold">Bold</option>
+                <option value="italic">Italic</option>
                 <option value="bolditalic">Bold + Italic</option>
             </select>
         </label>
         <label>
             Ratio:
-            <select class="dark:text-black"  x-model="style.ratio">
-                <option class="dark:text-black"  value="16:9">16:9</option>
-                <option class="dark:text-black"  value="9:16">9:16</option>
+            <select  x-model="style.ratio">
+                <option  value="16:9">16:9</option>
+                <option  value="9:16">9:16</option>
             </select>
         </label>
 
@@ -179,10 +179,12 @@
 
                     /// maybe in future make show ratio for user
                     //this.$watch('style.ratio',  () => this.applyCueStyle());
-
-                    // Сохраняем новые стили на бэке
                     this.$watch('style', () => this.saveStyle(), { deep: true });
 
+                    this.$watch('style', () => {
+                        if (this.status === STATUS.PROC) return;
+                        this.saveStyle();
+                    }, { deep: true });
                     window.addEventListener('vtt-updated', () => {
                         this.status = STATUS.READY;
                         this.downloadUrl = null;
