@@ -32,7 +32,7 @@
                 x-model="text"
                 @input="scheduleSave"
                 spellcheck="false"
-                class="flex-grow resize-y min-h-[300px] border p-3 font-mono text-sm"
+                class="flex-grow resize-y min-h-[300px] border p-3 font-mono text-sm dark:text-black"
             ></textarea>
             <div class="h-5 mt-1 text-sm">
                 <span x-show="saving" class="text-gray-500">Зберігаю…</span>
@@ -66,7 +66,7 @@
 
         <label>
             Размер:
-            <input type="number" x-model="style.fontSize" min="10" max="72" />px
+            <input class="dark:text-black" type="number" x-model="style.fontSize" min="10" max="72" />px
         </label>
 
         <label>
@@ -76,18 +76,18 @@
 
         <label>
             Шрифт:
-            <select x-model="style.fontStyle">
-                <option value="normal">Normal</option>
-                <option value="bold">Bold</option>
-                <option value="italic">Italic</option>
+            <select class="dark:text-black" x-model="style.fontStyle">
+                <option class="dark:text-black" value="normal">Normal</option>
+                <option class="dark:text-black" value="bold">Bold</option>
+                <option class="dark:text-black" value="italic">Italic</option>
                 <option value="bolditalic">Bold + Italic</option>
             </select>
         </label>
         <label>
             Ratio:
-            <select x-model="style.ratio">
-                <option value="16:9">16:9</option>
-                <option value="9:16">9:16</option>
+            <select class="dark:text-black"  x-model="style.ratio">
+                <option class="dark:text-black"  value="16:9">16:9</option>
+                <option class="dark:text-black"  value="9:16">9:16</option>
             </select>
         </label>
 
