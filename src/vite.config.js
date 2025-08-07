@@ -10,7 +10,11 @@ export default defineConfig({
                 'resources/css/app.css',          // Tailwind
                 'resources/js/alpine.js',         // Alpine// React entry
             ],
-            refresh: true,
+            refresh:  [
+                'resources/js/**',
+                'resources/css/**',
+                'resources/views/**/*.blade.php'
+            ],
         }),
     ],
     server: {

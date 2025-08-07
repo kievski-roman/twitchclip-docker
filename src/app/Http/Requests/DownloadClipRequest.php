@@ -24,6 +24,7 @@ class DownloadClipRequest extends FormRequest
     {
         return [
             'url' => ['required', 'url', 'starts_with:https://www.twitch.tv/'],
+            'title' => ['required','string','max:255'],
         ];
     }
 }
