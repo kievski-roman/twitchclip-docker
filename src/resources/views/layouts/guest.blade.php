@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? config('app.name', 'Laravel') }}</title>
     @if (file_exists(public_path('build/manifest.json')))
-        @vite(['resources/css/app.css', 'resources/js/alpine.js'])
+        @vite(['resources/css/app.css', 'resources/js/alpine.js', 'resources/js/theme.js'])
     @endif
 </head>
 
