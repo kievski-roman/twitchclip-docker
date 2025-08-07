@@ -77,7 +77,6 @@ class ClipFlowTest extends TestCase
 
         $this->assertEquals(ClipStatus::HARD_PROCESSING, $clip->fresh()->status);
 
-        // 8) Эмулируем, что джоб создал файл и обновил статус
         $hardPath = "hard/{$clip->uuid}_hardsub.mp4";
         Storage::disk('public')->put($hardPath, 'dummy-content');
         $clip->update([
