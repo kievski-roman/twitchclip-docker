@@ -45,7 +45,7 @@ class ClipPolicy
      */
     public function delete(User $user, Clip $clip): bool
     {
-        return false;
+        return $this->view($user, $clip);
     }
 
     /**
