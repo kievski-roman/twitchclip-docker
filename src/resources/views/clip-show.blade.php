@@ -258,6 +258,7 @@ video::cue {
                 }
             }
         }
+
     </script>
 
     <style>
