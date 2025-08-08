@@ -34,17 +34,21 @@ class ClipController extends Controller
         return view('clip-form');
     }
 
-    public function getClips(string $username)
+
+    public function getClipsPage(Request $request,string $username)
     {
         $userId = $this->twitch->getUserIdByName($username);
-
         if (! $userId) {
             return back()->withErrors(['username' => 'Користувача не знайдено']);
         }
+        $after = $request->input('after');
+        $count = $request->input('count', '5');
 
-        $raw = $this->twitch->getClipsByUserId($userId);
+        $raw = $this->twitch->getClipsByUserId($userId, (int)$count, $after);
+        $data = $raw['data'];
+        $cursor = $raw['cursor'] ?? null;
 
-        $clips = collect($raw)->map(function ($c) {
+        $clips = collect($data)->map(function ($c) {
             return [
                 'url'      => $c['url'],
                 'title'    => $c['title'],              // ← тут та самая строка
@@ -52,14 +56,20 @@ class ClipController extends Controller
                 'thumbnail_url' => $c['thumbnail_url'], // если нужно
             ];
         });
-
-        return view('clip-result', compact('clips', 'username'));
+        return view('clip-result', [
+            'clips'    => $clips,
+            'username' => $username,
+            'cursor'   => $cursor,
+            'count'    => (int) $count,
+        ]);
     }
     public function searchUserAndRedirect(Request $request)
     {
         $request->validate(['username' => 'required|string']);
 
-        return redirect()->route('clip.result', ['username' => $request->input('username')]);
+        return redirect()->route('clip.result', [
+            'username' => $request->input('username'),
+        ]);
     }
 
     // Метод POST /clip/download

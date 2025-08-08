@@ -16,7 +16,7 @@ Route::view('/', 'welcome');
 
 Route::get('/clip/search',  [ClipController::class,'showForm'])->name('clip.form');
 Route::post('/clip/search', [ClipController::class,'searchUserAndRedirect'])->name('clip.get');
-Route::get('/clips/result/{username}', [ClipController::class,'getClips'])->name('clip.result');
+Route::get('/clips/result/{username}', [ClipController::class,'getClipsPage'])->name('clip.result');
 
 
 //Route::view('/studio-test', 'studio')->name('studio.test');
