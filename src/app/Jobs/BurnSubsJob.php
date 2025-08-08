@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 use App\Enums\ClipStatus;
 
@@ -97,6 +98,13 @@ class BurnSubsJob implements ShouldQueue
             'status'    => ClipStatus::HARD_DONE,
         ]);
     }
-
+//    protected function logError($massege)
+//    {
+//        Log::error("[FFMPEG ERROR] Clip #{$this->clip->id} - {$massege}]");
+//        $this->clip->update([
+//            'status' => 'ERROR',
+//            'last_error' => $massege,
+//        ]);
+//    }
 
 }

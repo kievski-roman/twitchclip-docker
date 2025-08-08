@@ -1,7 +1,24 @@
 <x-app-layout>
 
-    <h2 class="text-2xl font-semibold mb-6">{{ $clip->name_video }}</h2>
+    <h2 x-model="style.title" class="text-2xl font-semibold mb-6">{{ $clip->name_video }}</h2>
+        <li class="border p-3 rounded flex justify-between items-center"
+            x-data="clipTitleEditor({{ $clip->id }}, @js($clip->name_video))">
 
+            <template x-if="!editing">
+                <div class="flex items-center gap-2">
+                    <span x-text="tempTitle"></span>
+                    <button @click="editing = true" class="text-sm text-gray-500">✏️</button>
+                </div>
+            </template>
+
+            <template x-if="editing">
+                <div class="flex items-center gap-2">
+                    <input type="text" x-model="tempTitle" maxlength="255" class="border px-2 py-1">
+                    <button @click="save()" class="text-sm text-green-600">💾</button>
+                    <button @click="editing = false" class="text-sm text-red-600">✖️</button>
+                </div>
+            </template>
+        </li>
     <!-- Видео + VTT-редактор -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -267,3 +284,4 @@ video::cue {
         .btn-success   { @apply bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded; }
     </style>
 </x-app-layout>
+<meta name="csrf-token" content="{{ csrf_token() }}">
