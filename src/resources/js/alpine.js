@@ -5,4 +5,5 @@ window.Alpine = Alpine;
 
 Alpine.start();
 import './theme'
+import './component/titleRedactor.js'
 

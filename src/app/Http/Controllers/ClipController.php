@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ClipStatus;
 use App\Http\Requests\DownloadClipRequest;
 use App\Http\Requests\UpdateStyleRequest;
+use App\Http\Requests\UpdateTitleRequest;
 use App\Http\Requests\UpdateVttRequest;
 use App\Jobs\BurnSubsJob;
 use App\Jobs\DownloadClipJob;
@@ -205,5 +206,18 @@ class ClipController extends Controller
             'status'    => ClipStatus::READY,
         ]);
         return response()->json(['ok'=>true]);
+    }
+    public function updateTitle(UpdateTitleRequest $request, Clip $clip)
+    {
+        $clip->update(['name_video' => $request->string('name_video')]);
+        return response()->json([
+            'ok'=>true,
+            'name_video' => $clip->name_video,
+            'id' => $clip->id,
+        ]);
+    }
+    public function destroyClip(Clip $clip)
+    {
+
     }
 }
