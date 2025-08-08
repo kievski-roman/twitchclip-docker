@@ -27,7 +27,17 @@
                     <a href="{{ route('clips.show', $clip) }}"
                        class="text-blue-500 hover:underline">Переглянути →</a>
                 </li>
+                <li class="border p-3 rounded flex justify-between items-center"
+                    x-data="clipRow({{ $clip->id }})">
+                    <span>{{ $clip->name_video }}</span>
+
+                    <div class="flex items-center gap-3">
+                        <button type="button" @click="remove()" class="text-red-600">🗑️ Видалити</button>
+                    </div>
+                </li>
             @endforeach
+
+
         </ul>
     @endif
 </x-app-layout>

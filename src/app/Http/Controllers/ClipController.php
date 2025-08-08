@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ClipStatus;
+use App\Events\ClipDeleted;
 use App\Http\Requests\DownloadClipRequest;
 use App\Http\Requests\UpdateStyleRequest;
 use App\Http\Requests\UpdateTitleRequest;
@@ -218,6 +219,18 @@ class ClipController extends Controller
     }
     public function destroyClip(Clip $clip)
     {
-
+        $this->authorize('delete', $clip);
+        $path = array_filter([
+            $clip->video_path ?? null,
+            $clip->hard_path ?? null,
+            $clip->vtt_path ?? null,
+        ]);
+        if($path) Storage::delete($path);
+        $clip->delete();
+        return response()->json([
+            'ok'=>true,
+            'name_video' => $clip->name_video,
+            'id' => $clip->id,
+        ]);
     }
 }
