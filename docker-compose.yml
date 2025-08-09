@@ -4,7 +4,7 @@ services:
       context: ./docker/nginx
       dockerfile: Dockerfile
     volumes:
-      - ./src:/var/www
+      - ./src:/var/www:delegated
     ports:
       - "8088:80"
     environment:
@@ -13,7 +13,6 @@ services:
       - "XDG_CONFIG_HOME=/app"
     depends_on:
       - php-fpm
-      - node
 
   php-fpm:
     build:
@@ -21,7 +20,7 @@ services:
       dockerfile: Dockerfile
     user: "1000:1000"
     volumes:
-      - ./src:/var/www
+      - ./src:/var/www:delegated
     environment:
       - "DB_PORT=3306"
       - "DB_HOST=mysql"
@@ -30,7 +29,6 @@ services:
     depends_on:
       - mysql
       - redis
-      - node
 
   php-cli:
     build:
@@ -72,16 +70,20 @@ services:
       - "8081:80"
 
   node:
-    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: docker/docker-node/Dockerfile
+    working_dir: /var/www
     ports:
       - "5173:5173"
     volumes:
-      - ./src:/var/www:delegated
-    working_dir: /var/www
-    tty: true
-    command: sh -c "npm install && npm run dev"
+      - ./src:/var/www:delegated   # код
     environment:
-      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_USEPOLLING=true   # на Docker Desktop лучше включить
+    tty: true
+    command: sh -c "npm run dev"
+
+
   redis:
     image: redis:7-alpine
     ports:
@@ -93,7 +95,7 @@ services:
       dockerfile: Dockerfile
     user: "1000:1000"
     volumes:
-      - ./src:/var/www
+      - ./src:/var/www:delegated
     command: php artisan queue:work
     depends_on:
       - mysql

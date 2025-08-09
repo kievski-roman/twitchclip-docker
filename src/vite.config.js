@@ -13,9 +13,11 @@ export default defineConfig({
             refresh:  [
                 'resources/js/**',
                 'resources/css/**',
-                'resources/views/**/*.blade.php'
+                'resources/views/**/*.blade.php',
+                'routes/**/*.php'
             ],
         }),
+        // react(),
     ],
     server: {
         host: '0.0.0.0',
@@ -26,5 +28,6 @@ export default defineConfig({
             origin: 'http://localhost:8088',
             credentials: true,
         },
+        watch: { usePolling: true, interval: 200 }
     },
 })

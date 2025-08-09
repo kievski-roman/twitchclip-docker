@@ -1,9 +1,12 @@
 //import './bootstrap';
 import Alpine from 'alpinejs';
 
-window.Alpine = Alpine;
 
-Alpine.start();
 import './theme'
-import './component/titleRedactor.js'
-import './component/clip-row.js'
+import './component/item-clip-redactor.js'
+import './component/clip-editor.js'
+
+
+window.Alpine = Alpine;
+Alpine.start();
+
