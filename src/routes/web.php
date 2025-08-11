@@ -66,6 +66,8 @@ Route::middleware('auth')->group(function () {
     // php artisan make:controller ProfileController
     // і розкоментуй profile-updated
 
+    Route::post('/clips/{clip}/generate', [ClipController::class, 'generate'])
+        ->name('clips.generate');
 
 });
 

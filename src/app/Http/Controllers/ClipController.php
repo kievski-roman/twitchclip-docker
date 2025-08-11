@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ClipStatus;
-use App\Events\ClipDeleted;
 use App\Http\Requests\DownloadClipRequest;
 use App\Http\Requests\UpdateStyleRequest;
 use App\Http\Requests\UpdateTitleRequest;

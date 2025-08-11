@@ -8,7 +8,6 @@
         ];
     @endphp
 
-    {{-- Заголовок (редагування назви в li залишив як у тебе) --}}
     <h2 class="text-2xl font-semibold mb-6">{{ $clip->name_video }}</h2>
 
     <li class="border p-3 rounded flex justify-between items-center"
@@ -19,7 +18,6 @@
                 <button @click="editing = true" class="text-sm text-gray-500">✏️</button>
             </div>
         </template>
-
         <template x-if="editing">
             <div class="flex items-center gap-2">
                 <input type="text" x-model="tempTitle" maxlength="255" class="border px-2 py-1">
@@ -29,28 +27,26 @@
         </template>
     </li>
 
-    {{-- Весь редактор: відео + VTT + стилі + таймлайн --}}
     <div
         x-data="clipEditor({
-        csrf: '{{ csrf_token() }}',
-        STATUS: { QUEUED:'{{ $STATUS['QUEUED'] }}', READY:'{{ $STATUS['READY'] }}', PROC:'{{ $STATUS['PROC'] }}', DONE:'{{ $STATUS['DONE'] }}' },
-        urls: {
-          saveVtt:    @js(route('clips.vtt', $clip)),
-          saveStyle:  @js($styleUrl),
-          gen:        @js($generateUrl),
-          status:     @js($statusUrl),
-          download:   @js($downloadUrl),
-          updateTitle:@js(route('clips.updateTitle', $clip)),
-        },
-        initial: {
-          title: @js($clip->name_video),
-          vttText: @js($subs),
-          style: @js($clip->vtt_style ?? ['color'=>'#ffff00','fontSize'=>24,'outline'=>'#000000','fontStyle'=>'normal','ratio'=>'16:9']),
-        }
-      })"
+          csrf: '{{ csrf_token() }}',
+          STATUS: { QUEUED:'{{ $STATUS['QUEUED'] }}', READY:'{{ $STATUS['READY'] }}', PROC:'{{ $STATUS['PROC'] }}', DONE:'{{ $STATUS['DONE'] }}' },
+          urls: {
+            saveVtt:    @js(route('clips.vtt', $clip)),
+            saveStyle:  @js($styleUrl),
+            gen:        @js($generateUrl),
+            status:     @js($statusUrl),
+            download:   @js($downloadUrl),
+            updateTitle:@js(route('clips.updateTitle', $clip)),
+          },
+          initial: {
+            title: @js($clip->name_video),
+            vttText: @js($subs),
+            style: @js($clip->vtt_style ?? ['color'=>'#ffff00','fontSize'=>24,'outline'=>'#000000','fontStyle'=>'normal','ratio'=>'16:9']),
+          }
+        })"
         x-init="init()"
     >
-        <!-- Видео + VTT-редактор -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <div>
                 <video x-ref="player" class="w-full rounded shadow" controls>
@@ -59,10 +55,9 @@
                            src="{{ Storage::url($clip->vtt_path) }}" default />
                 </video>
 
-                {{-- Таймлайн (два повзунки) --}}
                 <div class="mt-5">
                     <div class="text-sm text-gray-600 mb-2 flex items-center justify-between">
-                        <div>Довжина343: <span x-text="duration.toFixed(3)"></span>s</div>
+                        <div>Довжина: <span x-text="duration.toFixed(3)"></span>s</div>
                         <div class="flex items-center gap-4">
                             <div>start: <span x-text="trim.start.toFixed(3)"></span>s</div>
                             <div>end: <span x-text="trim.end.toFixed(3)"></span>s</div>
@@ -97,7 +92,7 @@
                 <h3 class="text-lg mb-2 text-center">Субтитри (VTT)</h3>
                 <textarea
                     x-model="text"
-                    @input="scheduleSave"
+                    @input="onTextareaInput($event)"
                     spellcheck="false"
                     class="flex-grow resize-y min-h-[300px] border p-3 font-mono text-sm dark:text-black"
                 ></textarea>
@@ -108,7 +103,6 @@
             </div>
         </div>
 
-        <!-- Контролы стиля и кнопки -->
         <div class="mt-8 flex gap-4">
             <label>
                 Цвет:
@@ -153,12 +147,12 @@
             </template>
         </div>
     </div>
+
     <style>
         .btn-primary   { @apply bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded; }
         .btn-secondary { @apply bg-gray-400 text-white px-4 py-2 rounded opacity-50 cursor-not-allowed; }
         .btn-success   { @apply bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded; }
 
-        /* стилі повзунків — не чіпають твої існуючі класи */
         .range-thumb::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -174,7 +168,6 @@
         .range-thumb { pointer-events: none; }
         .range-thumb::-webkit-slider-thumb { pointer-events: auto; }
         .range-thumb::-moz-range-thumb    { pointer-events: auto; }
-
         .range-thumb::-webkit-slider-runnable-track { height: 32px; background: transparent; }
         .range-thumb::-moz-range-track { height: 32px; background: transparent; }
     </style>
