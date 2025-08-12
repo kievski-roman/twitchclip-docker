@@ -45,10 +45,15 @@
                             <button @click="close()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
                                 Скасувати
                             </button>
-                            <button @click="confirmRemove()" :disabled="removing"
-                                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                <span x-show="!removing">Видалити</span>
-                                <span x-show="removing">⏳</span>
+                            <button
+                                @click="confirmRemove()"
+                                :disabled="removingIds.has(selectedId)"
+                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 min-w-[110px] grid place-items-center"
+                            >
+                                <span x-show="!removingIds.has(selectedId)">Видалити</span>
+                                <span x-show="removingIds.has(selectedId)" class="inline-flex items-center gap-2">Wait
+                                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><style>.spinner_OSmW{transform-origin:center;animation:spinner_T6mA .75s step-end infinite}@keyframes spinner_T6mA{8.3%{transform:rotate(30deg)}16.6%{transform:rotate(60deg)}25%{transform:rotate(90deg)}33.3%{transform:rotate(120deg)}41.6%{transform:rotate(150deg)}50%{transform:rotate(180deg)}58.3%{transform:rotate(210deg)}66.6%{transform:rotate(240deg)}75%{transform:rotate(270deg)}83.3%{transform:rotate(300deg)}91.6%{transform:rotate(330deg)}100%{transform:rotate(360deg)}}</style><g class="spinner_OSmW"><rect x="11" y="1" width="2" height="5" opacity=".14"/><rect x="11" y="1" width="2" height="5" transform="rotate(30 12 12)" opacity=".29"/><rect x="11" y="1" width="2" height="5" transform="rotate(60 12 12)" opacity=".43"/><rect x="11" y="1" width="2" height="5" transform="rotate(90 12 12)" opacity=".57"/><rect x="11" y="1" width="2" height="5" transform="rotate(120 12 12)" opacity=".71"/><rect x="11" y="1" width="2" height="5" transform="rotate(150 12 12)" opacity=".86"/><rect x="11" y="1" width="2" height="5" transform="rotate(180 12 12)"/></g></svg>
+                                </span>
                             </button>
                         </div>
                     </div>

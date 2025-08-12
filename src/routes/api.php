@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
 Route::get('/clips/{clip}/status', [ClipApiController::class, 'status'])
     ->name('api.clips.status');
 Route::post('/transcribe', [WhisperProxyController ::class, 'transcribe']);

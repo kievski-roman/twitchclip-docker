@@ -31,7 +31,7 @@ class TwitchApiService
         return $response->json('data.0.id') ?? null;
     }
 
-    public function getClipsByUserId(string $broadcasterId, int $count = 5, ?string $after = null): array
+    public function getClipsByUserId(string $broadcasterId, int $count = 6, ?string $after = null): array
     {
         if ($this->accessToken === '') {
             return [];

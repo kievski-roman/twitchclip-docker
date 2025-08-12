@@ -34,7 +34,7 @@ document.addEventListener('alpine:init', () => {
         urls:  opts.urls,
         STATUS: opts.STATUS,
         segmentPlayback: { active: true, loop: false },
-
+        trackBlobUrl: null,
 
         // ---- заголовок страницы ----
         title: opts.initial.title,
@@ -77,7 +77,7 @@ document.addEventListener('alpine:init', () => {
         saving: false,
         saved: false,
         debounce: null,
-
+        previewVttDebounce: null,
         scheduleSave() {
             clearTimeout(this.debounce);
             this.debounce = setTimeout(() => this.saveVtt(), 800);
@@ -126,6 +126,7 @@ document.addEventListener('alpine:init', () => {
         downloadUrl: opts.urls.download || null,
         poller: null,
 
+
         async saveStyle() {
             this.status = this.STATUS.READY; this.downloadUrl = null;
             await fetch(this.urls.saveStyle, {
@@ -149,7 +150,24 @@ document.addEventListener('alpine:init', () => {
   text-shadow:-1px -1px 0 ${outline},1px -1px 0 ${outline},-1px 1px 0 ${outline},1px 1px 0 ${outline};
 }`;
         },
+        startPolling() {
+            if (this.poller) return;
+            this.poller = setInterval(async () => {
+                try {
+                    const res = await fetch(this.urls.status).then(r => r.json());
+                    this.status      = res.status;
+                    this.downloadUrl = res.url;
+                    if (this.status === this.STATUS.DONE) {
+                        clearInterval(this.poller);
+                        this.poller = null;
+                    }
+                } catch(_) {}
+            }, 2000);
+    },
+
+
         async generate() {
+            if (this.status === this.STATUS.PROC) return;
             this.status = this.STATUS.PROC;
             this.startPolling();
             await fetch(this.urls.gen, {
@@ -162,16 +180,6 @@ document.addEventListener('alpine:init', () => {
                 })
             });
         },
-        startPolling() {
-            if (this.poller) return;
-            this.poller = setInterval(async () => {
-                const res = await fetch(this.urls.status).then(r => r.json());
-                this.status = res.status;
-                this.downloadUrl = res.url;
-                if (this.status === this.STATUS.DONE) { clearInterval(this.poller); this.poller = null; }
-            }, 2000);
-        },
-
         // ---- trim timeline ----
         trim: { start: 0, end: 0 },
 
@@ -185,14 +193,16 @@ document.addEventListener('alpine:init', () => {
             if (this.trim.start > this.trim.end) this.trim.end = this.trim.start;
             if (this.trim.start < 0) this.trim.start = 0;
             this.renderTextareaForSegment();
-            this.previewVtt();
+            clearTimeout(this.previewVttDebounce);
+            this.previewVttDebounce = setTimeout(() => this.previewVtt(), 120);
             if (this.playerEl) this.playerEl.currentTime = this.trim.start;
         },
         onEndChange() {
             if (this.trim.end < this.trim.start) this.trim.start = this.trim.end;
             if (this.trim.end > this.duration) this.trim.end = this.duration;
             this.renderTextareaForSegment();
-            this.previewVtt();
+            clearTimeout(this.previewVttDebounce);
+            this.previewVttDebounce = setTimeout(() => this.previewVtt(), 120);
             if (this.playerEl && this.playerEl.currentTime > this.trim.end) {
                 this.playerEl.currentTime = this.trim.end;
             }
@@ -237,9 +247,13 @@ document.addEventListener('alpine:init', () => {
             const start = this.trim.start;
             const end   = this.trim.end || this.duration || start;
             const cues  = this.parseVtt(this.sourceVtt);
-            const vtt   = this.serializeSegmentForTrack(cues, start, end); // <-- тут
+            const vtt   = this.serializeSegmentForTrack(cues, start, end);
             const blob  = new Blob([vtt], { type:'text/vtt' });
-            this.trackEl.src = URL.createObjectURL(blob);
+
+            if (this.trackBlobUrl) URL.revokeObjectURL(this.trackBlobUrl);
+            this.trackBlobUrl = URL.createObjectURL(blob);
+            this.trackEl.src = this.trackBlobUrl;
+
             const [tt] = this.playerEl.textTracks;
             if (tt) { tt.mode = 'disabled'; tt.mode = 'showing'; }
         },

@@ -13,6 +13,7 @@ use App\Models\Clip;
 use App\Services\TwitchApiService;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -43,7 +44,7 @@ class ClipController extends Controller
             return back()->withErrors(['username' => 'Користувача не знайдено']);
         }
         $after = $request->input('after');
-        $count = $request->input('count', '5');
+        $count = $request->input('count', '6');
 
         $raw = $this->twitch->getClipsByUserId($userId, (int)$count, $after);
         $data = $raw['data'];
@@ -109,25 +110,23 @@ class ClipController extends Controller
     public function updateVtt(UpdateVttRequest $request, Clip $clip)
     {
         $relative = "vtt/{$clip->uuid}.vtt";
+        $disk = Storage::disk('public');
 
+        $result = $disk->put($relative, $request->vtt);
 
-        Log::debug('WRITE_TO', ['rel' => $relative, 'db' => $clip->vtt_path]);
-        Log::debug('EXIST?', [
-            'rel_exists' => Storage::disk('public')->exists($relative),
-            'db_exists'  => Storage::disk('public')->exists($clip->vtt_path),
-        ]);
-
-
-        $result = Storage::disk('public')->put($relative, $request->vtt);
-        if (! $result) {
-            Log::error("Не вдалося записати Vtt: $relative");
+        if (! $clip->vtt_path) {
+            $clip->update(['vtt_path' => $relative]);
+        } else {
+            $clip->touch();
         }
-        if($request->has('style')){
+
+        if ($request->has('style')) {
             $clip->update(['vtt_style' => $request->input('style')]);
         }
 
-        // змінюємо тільки updated_at, бо vtt_path і status не змінюються
-        $clip->touch();
+        if (! $result) {
+            Log::error("Не вдалося записати Vtt: $relative");
+        }
 
         return response($request->vtt, 200)
             ->header('Content-Type', 'text/plain')
@@ -169,27 +168,45 @@ class ClipController extends Controller
             'statusUrl'   => route('api.clips.status',$clip),
         ]);
     }
-    public function generateHardSubs(Request $request,Clip $clip)
+    public function generateHardSubs(Request $request, Clip $clip)
     {
-        $style = $request->input('style', [
-            'color'    => '#ffff00',
-            'fontSize' => 24,
-            'outline' => '#000000',
-            'fontStyle' => 'normal',
-            'ratio'     => '16:9',
+        $this->authorize('update', $clip);
+
+        // валидация поступивших данных
+        $data = $request->validate([
+            'style.color'     => ['required','string'],
+            'style.fontSize'  => ['required','numeric','between:8,120'],
+            'style.outline'   => ['required','string'],
+            'style.fontStyle' => ['required','in:normal,bold,italic,bolditalic'],
+            'ratio'           => ['required','in:16:9,9:16'],
+            'trim.start'      => ['required','numeric','gte:0'],
+            'trim.end'        => ['required','numeric','gt:trim.start'],
         ]);
+
+        $style = Arr::get($data, 'style', []);
+        $start = (float) Arr::get($data, 'trim.start', 0.0);
+        $end   = (float) Arr::get($data, 'trim.end', 0.0);
+        $ratio = (string) Arr::get($data, 'ratio', '16:9');
+
+        // фиксируем стиль и статус
         $clip->update([
             'status'    => ClipStatus::HARD_PROCESSING,
             'vtt_style' => $style,
         ]);
 
+        // кидаем задачу
         BurnSubsJob::dispatch(
-            $clip,
-            $style,
-            $style['ratio'] ?? '16:9'
+            clip:  $clip,
+            style: $style,
+            ratio: $ratio,
+            start: $start,
+            end:   $end
         )->onQueue('hardsubs');
 
-        return back()->with('flash', 'Почали генерацію відео з hard-сабами!');
+
+        Log::info('HardSubs queued', ['clip'=>$clip->id, 'start'=>$start, 'end'=>$end, 'ratio'=>$ratio]);
+
+        return response()->json(['ok' => true], 202);
     }
     public function downloadHardSub(Clip $clip)
     {
@@ -219,12 +236,29 @@ class ClipController extends Controller
     public function destroyClip(Clip $clip)
     {
         $this->authorize('delete', $clip);
-        $path = array_filter([
-            $clip->video_path ?? null,
-            $clip->hard_path ?? null,
-            $clip->vtt_path ?? null,
-        ]);
-        if($path) Storage::delete($path);
+        if ($clip->status === ClipStatus::HARD_PROCESSING) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Кліп зараз в обробці. Спробуйте пізніше.'
+            ], 409);
+        }
+
+        $disk = Storage::disk('public');
+        $uuid = $clip->uuid;
+
+        // Список всех возможных файлов для этого клипа
+        $keys = collect([
+            $clip->video_path,                   // videos/{uuid}.mp4
+            $clip->vtt_path, // основной VTT (если вдруг не был установлен)
+            $clip->hard_path,                    // hard/{uuid}_hardsub.mp4
+            "temp/{$uuid}.vtt",                  // временные, на случай если не удалились в джобе
+            "temp/{$uuid}.ass",
+        ])->filter()->unique()->values()->all();
+
+        // Тихо удаляем всё, что есть
+        foreach ($keys as $key) {
+            try { $disk->delete($key); } catch (\Throwable $e) {}
+        }
         $clip->delete();
         return response()->json([
             'ok'=>true,

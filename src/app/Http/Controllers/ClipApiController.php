@@ -6,6 +6,7 @@ use App\Enums\ClipStatus;
 use App\Models\Clip;
 use App\Services\TwitchApiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ClipApiController extends Controller
 {
@@ -21,12 +22,18 @@ class ClipApiController extends Controller
     //
     public function status(Clip $clip)
     {
-        return [
-            'status' => $clip->status,
+        $progress = Cache::get("clip:{$clip->id}:progress");
 
-            'url'    => $clip->status === ClipStatus::HARD_DONE
+        return [
+            'status'   => $clip->status,
+            'url'      => $clip->status === ClipStatus::HARD_DONE
                 ? route('clips.download', $clip)
                 : null,
+            'progress' => match ($clip->status) {
+                ClipStatus::HARD_PROCESSING => $progress ?? 0,
+                ClipStatus::HARD_DONE       => 100,
+                default                     => null,
+            },
         ];
     }
     public function getClipsJson(Request $request, string $username )
@@ -36,7 +43,7 @@ class ClipApiController extends Controller
             return back()->withErrors(['username' => 'Користувача не знайдено']);
         }
         $after = $request->input('after');
-        $count = $request->input('count', '5');
+        $count = $request->input('count', '6');
 
         $raw = $this->twitch->getClipsByUserId($userId, (int)$count, $after);
         $data = $raw['data'];

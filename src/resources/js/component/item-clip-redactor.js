@@ -1,9 +1,10 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('clipsList', () => ({
         showConfirm: false,
-        removing: false,
         selectedId: null,
         selectedTitle: '',
+        // вместо одного флага — набор id, которые сейчас удаляются
+        removingIds: new Set(),
 
         open(detail) {
             this.selectedId    = detail?.id ?? null;
@@ -11,34 +12,31 @@ document.addEventListener('alpine:init', () => {
             this.showConfirm   = true;
         },
         close() {
-            if (this.removing) return;
             this.showConfirm = false;
             this.selectedId = null;
-            this.selectedTitle = '5';
+            this.selectedTitle = '';
         },
 
         async confirmRemove() {
-            if (!this.selectedId || this.removing) return;
+            const id = this.selectedId;
+            if (!id || this.removingIds.has(id)) return;
 
-            // 1) мгновенно закрываем модалку (элемент будет ВЫБРОШЕН из DOM)
+            // закрываем модалку сразу, чтобы не мешала
             this.showConfirm = false;
 
-            // 2) находим <li> и запускаем класс-анимацию
-            const row = document.querySelector(`[data-clip-id="${this.selectedId}"]`);
+            // анимация исчезновения строки
+            const row = document.querySelector(`[data-clip-id="${id}"]`);
             if (!row) return;
 
-            const placeholder = document.createComment(`clip ${this.selectedId} placeholder`);
+            const placeholder = document.createComment(`clip ${id} placeholder`);
             row.parentNode.insertBefore(placeholder, row);
-
             row.classList.add('fade-out');
-
-            // снимаем из DOM через 300мс
             setTimeout(() => { if (row.isConnected) row.remove(); }, 300);
 
-            // 3) параллельно шлём DELETE
-            this.removing = true;
+            // отправляем DELETE
+            this.removingIds.add(id);
             try {
-                const res = await fetch(`/clips/${this.selectedId}`, {
+                const res = await fetch(`/clips/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json',
@@ -46,12 +44,9 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
                 placeholder.remove();
-                this.selectedId = null;
-                this.selectedTitle = '';
             } catch (e) {
-                // ОТКАТ: вернём строку на место и уберём эффект
+                // откат — вернём строку на место
                 if (placeholder.parentNode) {
                     placeholder.parentNode.insertBefore(row, placeholder);
                     row.classList.remove('fade-out');
@@ -59,8 +54,22 @@ document.addEventListener('alpine:init', () => {
                 }
                 alert('Не вдалося видалити кліп');
             } finally {
-                this.removing = false;
+                this.removingIds.delete(id);
+                // чистим выбранное (на всякий)
+                if (this.selectedId === id) {
+                    this.selectedId = null;
+                    this.selectedTitle = '';
+                }
             }
         },
+    }));
+    Alpine.data('btnLoader', (action) => ({
+        loading: false,
+        async run() {
+            if (this.loading) return;
+            this.loading = true;
+            try { await action?.(); }
+            finally { this.loading = false; }
+        }
     }));
 });
