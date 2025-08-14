@@ -96,7 +96,6 @@ services:
     user: "1000:1000"
     volumes:
       - ./src:/var/www:delegated
-    command: php artisan queue:work
     depends_on:
       - mysql
       - redis

@@ -182,8 +182,8 @@
                     <label class="flex flex-col gap-1">
                         <span class="text-sm text-gray-600">Ratio</span>
                         <select x-model="style.ratio" class="border rounded px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-black">
-                            <option value="16:9">16:9</option>
                             <option value="9:16">9:16</option>
+                            <option value="16:9">16:9</option>
                         </select>
                     </label>
                 </div>

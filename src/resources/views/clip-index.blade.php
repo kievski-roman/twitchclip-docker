@@ -1,6 +1,5 @@
 <x-app-layout>
     <h1 class="text-2xl mb-4">Готові кліпи</h1>
-
     @if($clips->isEmpty())
         <p class="text-gray-500">Тут поки що порожньо. Зайди на сторінку «Додати новий» і закинь перший кліп 😉</p>
     @else
@@ -15,7 +14,12 @@
                     <div class="flex items-center gap-2">
                         <span>{{ $clip->name_video }}</span>
                     </div>
-
+                    @if($clip->status === \App\Enums\ClipStatus::HARD_DONE)
+                        <a href="{{ route('clips.download', $clip) }}"
+                           class="inline-flex items-center justify-center px-4 py-2 rounded border border-gray-300 text-gray-800 hover:bg-gray-50">
+                            generation history
+                        </a>
+                    @endif
                     <div class="flex items-center gap-3">
                         <a href="{{ route('clips.show', $clip) }}" class="text-blue-500 hover:underline">
                             Переглянути →

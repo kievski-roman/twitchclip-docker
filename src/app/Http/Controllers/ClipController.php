@@ -17,8 +17,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-
-
 class ClipController extends Controller
 {
     use AuthorizesRequests;
@@ -35,8 +33,6 @@ class ClipController extends Controller
     {
         return view('clip-form');
     }
-
-
     public function getClipsPage(Request $request,string $username)
     {
         $userId = $this->twitch->getUserIdByName($username);
@@ -73,7 +69,6 @@ class ClipController extends Controller
             'username' => $request->input('username'),
         ]);
     }
-
     // Метод POST /clip/download
     public function download(DownloadClipRequest $request)
     {
@@ -178,7 +173,7 @@ class ClipController extends Controller
             'style.fontSize'  => ['required','numeric','between:8,120'],
             'style.outline'   => ['required','string'],
             'style.fontStyle' => ['required','in:normal,bold,italic,bolditalic'],
-            'ratio'           => ['required','in:16:9,9:16'],
+            'ratio'           => ['required','in:9:16,16:9'],
             'trim.start'      => ['required','numeric','gte:0'],
             'trim.end'        => ['required','numeric','gt:trim.start'],
         ]);
@@ -186,7 +181,7 @@ class ClipController extends Controller
         $style = Arr::get($data, 'style', []);
         $start = (float) Arr::get($data, 'trim.start', 0.0);
         $end   = (float) Arr::get($data, 'trim.end', 0.0);
-        $ratio = (string) Arr::get($data, 'ratio', '16:9');
+        $ratio = (string) Arr::get($data, 'ratio', '9:16');
 
         // фиксируем стиль и статус
         $clip->update([

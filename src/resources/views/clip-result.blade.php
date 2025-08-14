@@ -1,4 +1,4 @@
-<x-guest-layout>
+<x-app-layout>
     <div class="max-w-5xl mx-auto px-4 py-6">
         <h1 class="text-2xl md:text-3xl font-semibold mb-6">
             🎬 Кліпи стрімера: {{ $username }}
@@ -35,8 +35,7 @@
 
                         <img :src="clip.thumbnail_url" alt=""
                              class="rounded-lg border aspect-video object-cover w-full mb-4" loading="lazy">
-
-                        {{-- Кнопка загрузки — нативный сабмит + лоудер --}}
+                       {{-- Кнопка загрузки — нативный сабмит + лоудер --}}
                         <form action="{{ route('clip.download') }}" method="POST"
                               x-data="{ loading:false }"
                               @submit="loading = true"
@@ -44,6 +43,7 @@
                             @csrf
                             <input type="hidden" name="url"   :value="clip.url">
                             <input type="hidden" name="title" :value="clip.title">
+
 
                             <button type="submit"
                                     :disabled="loading"
@@ -123,4 +123,4 @@
             }));
         });
     </script>
-</x-guest-layout>
+</x-app-layout>
